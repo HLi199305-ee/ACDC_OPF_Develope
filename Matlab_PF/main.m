@@ -6,4 +6,4 @@
 %  [3]  Matacdc1.0 unser's manual, https://www.esat.kuleuven.be/electa/teaching/matacdc/MatACDCManual
 
 clc; clear all; close all;
-solve_opf('mtdc3slack_a.m', 'ac14ac57.m')
+solve_opf('mtdc3slack_a', 'ac14ac57')

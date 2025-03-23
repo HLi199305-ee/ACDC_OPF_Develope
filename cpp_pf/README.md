@@ -4,7 +4,7 @@
 
 ## AC/DC Optimal Power Flow in C++
 
-🚀 **Current Status:** This is an **early-stage Version 0.1, under active development** … more features coming soon! ⚡
+🚀 **Current Status:** This is an **early-stage Version 0.1, Still building and waiting for updating** ... more features coming soon! ⚡
 
 📦 **Required C++ Libraries**
 
@@ -15,7 +15,7 @@
 
 ---
 
-## Installing Eign with vcpkg
+## Installing Eigen with vcpkg
 [vcpkg](https://github.com/microsoft/vcpkg)
 1. **Install vcpkg**:
    ```bash
@@ -23,8 +23,9 @@
    cd vcpkg
    .\bootstrap-vcpkg.bat  # on Windows
 
-2. **Install Eign**:
+2. **Install Eigen**:
+   ```bash
    ./vcpkg install eigen3
 
 ## Configure Gurobi in Microsoft Visual Studio
-You can find guidance (https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio)
+You can find [guidance] (https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio)

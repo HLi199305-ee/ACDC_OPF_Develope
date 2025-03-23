@@ -28,4 +28,4 @@
    ./vcpkg install eigen3
 
 ## Configure Gurobi in Microsoft Visual Studio
-You can find [guidance] (https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio)
+You can find [guidance](https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio)

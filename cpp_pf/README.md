@@ -13,11 +13,8 @@
 | **Eigen**   |  3.4.0      |  C++ library for linear algebra and numerical computations. |
 | **Gurobi**  |  9.5.2       | optimization solver (requires license). |
 
----
-
-** Installing Eigen with vcpkg **
-[vcpkg](https://github.com/microsoft/vcpkg)
-```sh
+### Installing Eigen with vcpkg
+We recommend using [vcpkg](https://github.com/microsoft/vcpkg).
 1. **Install vcpkg**:
    ```bash
    git clone https://github.com/microsoft/vcpkg.git
@@ -28,5 +25,5 @@
    ```bash
    ./vcpkg install eigen3
 
-** Configure Gurobi in Microsoft Visual Studio **
-You can find [guidance](https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio)
+### Configure Gurobi in Microsoft Visual Studio
+Here you can find [guidance](https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio).

@@ -5,7 +5,10 @@ from pyomo.opt import SolverFactory
 from params_acdc import params_ac, params_dc
 
 def solve_opf(acgrid_name: str, dcgrid_name: str):
-    # Load DC and AC data
+    
+    # -------------------------------
+    # 1: Load DC and AC Parameters
+    # -------------------------------
     res_params_dc   = params_dc(dcgrid_name)
     network_dc      = res_params_dc["network_dc"]
     baseMW_dc       = res_params_dc["baseMW_dc"]
@@ -59,15 +62,20 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     fbus_ac             = res_params_ac["fbus_ac"]
     tbus_ac             = res_params_ac["tbus_ac"]
 
+    # -------------------------------
+    # 2: Build the Optimization Model and Set Up Constraints
+    # -------------------------------
     model = ConcreteModel()
     model.addconstraints = ConstraintList()
 
-    # Build the DC grid part of the model
     setup_dc(model, res_params_dc)
     setup_ac(model, res_params_ac)
     setup_cp(model, res_params_dc, res_params_ac)
     setup_obj(model, res_params_dc, res_params_ac)
 
+    # -------------------------------
+    # 3: Solve AC/DC OPF
+    # -------------------------------
     solver = SolverFactory("gurobi") 
     solver.options["TimeLimit"] = 600  
     solver.options["Threads"] = 8          
@@ -77,7 +85,11 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
   
     solver.solve(model, tee=True)
 
+    # ============================ Print Results =============================
 
+    # ----------------------------
+    # Print AC Grid Bus Data
+    # ---------------------------- 
     print("================================================================================")
     print("|   AC  Bus Data                                                               |")
     print("================================================================================")
@@ -123,11 +135,13 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
         
     print("\n-----   -----  --------  --------  --------  ---------   ------  --------")
     
-    GenCost = value(model.objective)
-    print(f"The total generation costs is ＄{GenCost:.2f}/MWh (€{GenCost / 1.08:.2f}/MWh)")
+    totalGenerationCost = value(model.objective)
+    print(f"The total generation costs is ＄{totalGenerationCost:.2f}/MWh (€{totalGenerationCost / 1.08:.2f}/MWh)")
     print("\n")
 
-
+    # ----------------------------
+    # Print AC Grid Branch Data
+    # ----------------------------
     print("===========================================================================================")
     print("|     AC Grids Branch Data                                                                |")
     print("===========================================================================================")
@@ -147,7 +161,7 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     for ng in range(ngrids)
     }
 
-    NetPloss_ac = 0.0
+    totalACPowerLoss = 0.0
     for ng in range(ngrids):
         for i in range(nbranches_ac[ng]):
             printed_fbus_ac = fbus_ac[ng][i] 
@@ -160,16 +174,19 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
            
             
             printed_pij_loss_ac = abs(printed_pij_from_to + printed_pij_to_from)
-            NetPloss_ac += printed_pij_loss_ac
+            totalACPowerLoss += printed_pij_loss_ac
             
             print(f"{ng+1:2} {i+1:6} {printed_fbus_ac:7} {printed_tbus_ac:6}"
                   f" {printed_pij_from_to:12.3f} {printed_qij_from_to:11.3f}"
                   f" {printed_pij_to_from:12.3f} {printed_qij_to_from:11.3f} {printed_pij_loss_ac:11.3f}")
     print("----   ------  -----  -----  ---------  -----------    --------  ----------  -------------")
     
-    print(f"The total AC network losses is {NetPloss_ac:.3f} MW\n")
+    print(f"The total AC network losses is {totalACPowerLoss:.3f} MW\n")
     print("\n")
 
+    # ----------------------------
+    # Print DC Grid Bus Data
+    # ---------------------------- 
     print("================================================================================")
     print("|   MTDC Bus Data                                                              |")
     print("================================================================================")
@@ -198,6 +215,9 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     print(f"The total converter losses is {TotalConvPloss:.3f} MW\n")
     print("\n")
 
+    # ----------------------------
+    # Print DC Grid Branch Data
+    # ---------------------------- 
     print("===================================================================")
     print(" |     MTDC Branch Data                                            |")
     print(" ===================================================================")
@@ -206,7 +226,7 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     print(" ------  -----  -----   ---------      ---------      ---------")
     formatted_pij_dc = [[value(model.pij_dc[i, j]) for j in range(nbuses_dc)] for i in range(nbuses_dc)] * baseMW_dc * pol_dc
     
-    NetPloss_dc = 0.0
+    totalDCPowerLoss = 0.0
     for i in range(nbranches_dc):
         printed_from_bus_dc = fbus_dc[i] 
         printed_to_bus_dc = tbus_dc[i] 
@@ -219,10 +239,10 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
         print(f"{i+1:5} {printed_from_bus_dc:6} {printed_to_bus_dc:6}"
               f" {printed_pij_from_to_dc:11.3f} {printed_pij_to_from_dc:14.3f} {printed_pij_loss_dc:13.3f}")
         
-        NetPloss_dc += printed_pij_loss_dc
+        totalDCPowerLoss += printed_pij_loss_dc
     
     print(" ------  -----  -----   ---------      ---------      ---------")
-    print(f" The total DC network losses is {NetPloss_dc:.3f} MW.\n")
+    print(f" The total DC network losses is {totalDCPowerLoss:.3f} MW.\n")
 
     return model
 

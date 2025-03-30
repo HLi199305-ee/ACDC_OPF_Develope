@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from typing import Dict, Any
 from pyomo.environ import *
@@ -5,6 +6,8 @@ from pyomo.opt import SolverFactory
 from params_acdc import params_ac, params_dc
 
 def solve_opf(acgrid_name: str, dcgrid_name: str):
+    
+    start = time.perf_counter()
     
     # -------------------------------
     # 1: Load DC and AC Parameters
@@ -84,6 +87,9 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     solver.options["NumericFocus"] = 3
   
     solver.solve(model, tee=True)
+    
+    end = time.perf_counter()
+
 
     # ============================ Print Results =============================
 
@@ -235,7 +241,6 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
         printed_pij_to_from_dc = formatted_pij_dc[printed_to_bus_dc-1][printed_from_bus_dc-1]
         printed_pij_loss_dc = abs(printed_pij_from_to_dc + printed_pij_to_from_dc)
 
-
         print(f"{i+1:5} {printed_from_bus_dc:6} {printed_to_bus_dc:6}"
               f" {printed_pij_from_to_dc:11.3f} {printed_pij_to_from_dc:14.3f} {printed_pij_loss_dc:13.3f}")
         
@@ -243,6 +248,9 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     
     print(" ------  -----  -----   ---------      ---------      ---------")
     print(f" The total DC network losses is {totalDCPowerLoss:.3f} MW.\n")
+
+    elapsed_time = end - start
+    print(f"Excution time is {elapsed_time:.3f} s.")
 
     return model
 

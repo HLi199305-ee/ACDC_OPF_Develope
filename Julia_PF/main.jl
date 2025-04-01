@@ -13,8 +13,4 @@ include("params_dc.jl") # obtain ac grid parameters
 include("params_ac.jl") # obtain dc grid parameters 
 include("solve_opf.jl") # solve ac/dc OPF
 
-using JuMP, Gurobi
-using SparseArrays, LinearAlgebra
-using Printf
-
 result_opf = solve_opf("ac14ac57", "mtdc3slack_a")

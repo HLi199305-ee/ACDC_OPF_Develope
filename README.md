@@ -7,9 +7,11 @@ Code structure is simple and well-suited for researchers who are just beginning 
 
 Detailed information regarding AC/DC OPF problem formulation can be found in [Documentation](Readme_ACDC_OPF.pdf).
 
+Further improvements and new features will be added.
+
 ![alt text](ACDC_OPF.png?raw=true)
 
 ## Contributors
-- **Haixiao Li**, design of the power flow strategy, formulation of the power flow solution, code development.
+- **Haixiao Li**, design of the power flow strategy, formulation of the power flow solution, development of code in different languages.
 - **Azadeh Kermansaravi**, help with development of C++ power flow solution
 - **Aleksandra Lekić**, supervision and acquiring of the funding

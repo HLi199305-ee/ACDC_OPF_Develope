@@ -1,0 +1,4 @@
+case_name,median_time,min_time,max_time,peak_memory,relative_memory
+ac14ac57,1.78844,1.74633,1.87768,0.53125,1
+ac57ac118,46.0199,45.8714,46.6885,163.738,308.213
+ac9ac14,0.403147,0.398037,0.526843,0,0

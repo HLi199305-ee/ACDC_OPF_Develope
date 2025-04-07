@@ -1,66 +1,133 @@
 using BenchmarkTools
 using Statistics
-using LinearAlgebra
-using CUDA
+using DelimitedFiles
 
-# Include the same files as in main.jl
+# Include required files
 cd(dirname(@__FILE__))
-include("create_ac.jl") # define interconnected ac grids
-include("create_dc.jl") # define multi-terminal dc grid
-include("makeYbus.jl") # calculate Bus Admittance Matrix
-include("params_dc.jl") # obtain ac grid parameters 
-include("params_ac.jl") # obtain dc grid parameters 
-include("solve_opf.jl") # solve ac/dc OPF
+include("create_ac.jl")
+include("create_dc.jl")
+include("makeYbus.jl")
+include("params_dc.jl")
+include("params_ac.jl")
+include("solve_opf.jl")
 
-# List of test cases
+# Robust memory measurement function
+function get_peak_memory()
+    try
+        # Linux/macOS version
+        return parse(Int, split(read(`ps -p $(getpid()) -o rss=`, String))[1]) / 1024.0
+    catch
+        try
+            # Windows version
+            cmd_output = read(`wmic process where processid=$(getpid()) get WorkingSetSize`, String)
+            mem_bytes = parse(Int, split(cmd_output)[2])
+            return mem_bytes / (1024.0 * 1024.0)
+        catch e
+            @warn "Memory measurement failed: $e"
+            return 0.0
+        end
+    end
+end
+
+# Benchmark results structure
+struct BenchmarkResult
+    case_name::String
+    median_time::Float64
+    min_time::Float64
+    max_time::Float64
+    peak_memory::Float64
+    relative_memory::Float64
+end
+
+# Test cases
 test_cases = ["ac14ac57", "ac57ac118", "ac9ac14"]
+dc_case = "mtdc3slack_a"
 
 # Store results
-results = []
+results = BenchmarkResult[]
 
-println("\n====== AC/DC OPF Benchmark ======\n")
+println("\n====== AC/DC OPF Julia Benchmark ======\n")
+println("Configuration:")
+println("  DC Case: $dc_case")
+println("  Threads: $(Threads.nthreads())")
+println("  Samples: 5\n")
+
+# Warm-up phase (3 runs)
+println("Performing warm-up runs...")
+for i in 1:3
+    solve_opf(test_cases[1], dc_case)
+    GC.gc() # Force garbage collection
+end
 
 for case in test_cases
-    println("\n Running test case: $case")
+    println("\nBenchmarking case: $case")
     
-    # Warm-up run (to compile code and load data)
-    solve_opf(case, "mtdc3slack_a")
+    run_times = Float64[]
+    memory_usage = Float64[]
     
-    # Benchmark with parameters suitable for optimization problems
-    bench = @benchmarkable solve_opf($case, "mtdc3slack_a") seconds=30 samples=10 evals=1
+    # Measurement runs (5 iterations)
+    for i in 1:5
+        GC.gc()
+        mem_before = get_peak_memory()
+        
+        # Time the actual execution
+        t = @elapsed begin
+            solve_opf(case, dc_case)
+        end
+        
+        mem_after = get_peak_memory()
+        
+        push!(run_times, t)
+        push!(memory_usage, max(0.0, mem_after - mem_before)) # Ensure non-negative
+        
+        println("  Run $i: ", round(t, digits=3), " s, ", 
+               round(memory_usage[end], digits=1), " MB")
+    end
     
-    # Run the benchmark
-    b = run(bench)
+    # Calculate statistics
+    sort!(run_times)
+    sort!(memory_usage)
     
-    # Extract statistics
-    time_median = median(b.times) / 1e9  # Convert nanoseconds to seconds
-    time_mean = mean(b.times) / 1e9
-    time_min = minimum(b.times) / 1e9
-    time_max = maximum(b.times) / 1e9
-    mem_median = median(b.memory) / 1e6  # Convert bytes to MB
+    median_time = median(run_times)
+    min_time = minimum(run_times)
+    max_time = maximum(run_times)
+    peak_mem = maximum(memory_usage)  # Use max observed memory
     
-    # Parallelization Check
-    num_threads = Threads.nthreads()
+    # Calculate relative memory (compared to first case)
+    if !isempty(results) && results[1].peak_memory > 0
+        relative_mem = peak_mem / results[1].peak_memory
+    else
+        relative_mem = isempty(results) ? 1.0 : NaN
+    end
     
-    # GPU Utilization 
-    gpu_enabled = CUDA.functional() ? "Yes" : "No"
-    
-    # Store results
-    push!(results, (case, time_median, time_mean, time_min, time_max, mem_median, num_threads, gpu_enabled))
-    
-    # Print results
-    println("Execution Time (median): ", round(time_median, digits=3), " seconds")
-    println("Execution Time (mean): ", round(time_mean, digits=3), " seconds")
-    println("Execution Time Range: ", round(time_min, digits=3), " - ", round(time_max, digits=3), " seconds")
-    println("Memory Usage (median): ", round(mem_median, digits=2), " MB")
-    println("Parallel Threads Used: ", num_threads)
-    println("GPU Acceleration: ", gpu_enabled)
+    push!(results, BenchmarkResult(case, median_time, min_time, max_time, peak_mem, relative_mem))
 end
 
-# Print final comparison table
-println("\n====== Benchmark Results Summary ======\n")
-println("| System     | Time Median (s) | Time Mean (s) | Time Min (s) | Time Max (s) | Memory (MB) | Threads | GPU |")
-println("|------------|-----------------|---------------|--------------|--------------|-------------|---------|-----|")
-for (case, tmed, tmean, tmin, tmax, mem, threads, gpu) in results
-    println("| $(lpad(case, 10)) | $(lpad(round(tmed, digits=3), 15)) | $(lpad(round(tmean, digits=3), 13)) | $(lpad(round(tmin, digits=3), 12)) | $(lpad(round(tmax, digits=3), 12)) | $(lpad(round(mem, digits=2), 11)) | $(lpad(threads, 7)) | $(lpad(gpu, 3)) |")
+# Print results table
+println("\n====== Benchmark Results Summary ======")
+println("| Case       | Time (s)         | Memory Usage       |")
+println("|------------|------------------|--------------------|")
+println("|            | Median | Range   | Absolute | Relative |")
+println("|------------|--------|---------|----------|----------|")
+
+for res in results
+    println("| $(lpad(res.case_name, 10)) | ",
+            "$(lpad(round(res.median_time, digits=3), 6)) | ",
+            "$(lpad(round(res.min_time, digits=3), 5))-",
+            "$(lpad(round(res.max_time, digits=3), 3)) | ",
+            "$(lpad(round(res.peak_memory, digits=1), 8)) | ",
+            "$(lpad(isnan(res.relative_memory) ? "N/A" : string(round(res.relative_memory, digits=2)), 8))x |")
 end
+
+# Save results to CSV
+open("benchmark_julia.csv", "w") do io
+    writedlm(io, [["case_name", "median_time", "min_time", "max_time", 
+                   "peak_memory", "relative_memory"]], ',')
+    for res in results
+        writedlm(io, [[res.case_name, res.median_time, res.min_time, 
+                      res.max_time, res.peak_memory, res.relative_memory]], ',')
+    end
+end
+
+println("\nResults saved to benchmark_julia.csv")
+

@@ -15,7 +15,7 @@ function solve_opf(caseName_dc, caseName_ac)
 % 
 %   See also: params_ac.m, params_dc.m
 
-    %% 1. Load AC and DC Parameters
+     %% 1. Load AC and DC Parameters
     [network_dc, baseMW_dc, bus_dc, branch_dc, conv_dc, pol_dc, nbuses_dc, nbranches_dc, nconvs_dc, fbus_dc, tbus_dc, ...
         ybus_dc, rtf_dc, xtf_dc, bf_dc, rc_dc, xc_dc, ztfc_dc, gtfc_dc, btfc_dc, ...
         aloss_dc, bloss_dc, closs_dc, convState_dc, baseKV_dc] = params_dc(caseName_dc);
@@ -25,7 +25,7 @@ function solve_opf(caseName_dc, caseName_ac)
         pd_ac, qd_ac, nbuses_ac, nbranches_ac, ngens_ac, GG_ac, ...
         BB_ac, GG_ft_ac, BB_ft_ac, GG_tf_ac, BB_tf_ac, fbus_ac, tbus_ac] = params_ac(caseName_ac);
     
-    %% 3. Choose Solver
+    %% 2. Choose Solver
     ANSWER = questdlg('Select Solver with Yalmip:', 'acdcopf', ...
         'Gurobi-solver','Cplex-solver','C');
     UseCplex = strcmp(ANSWER, 'Cplex-solver');
@@ -33,7 +33,7 @@ function solve_opf(caseName_dc, caseName_ac)
     
     tic;  % Start timer
     
-    %% 4. Execute AC/DC OPF
+    %% 3. Execute AC/DC OPF
     % Set up DC variables and constraints
     [var_dc, lb_dc, ub_dc, con_dc] = setup_dc(nbuses_dc, nconvs_dc, bus_dc, conv_dc, ybus_dc, pol_dc, baseMW_dc, ...
         gtfc_dc, btfc_dc, aloss_dc, bloss_dc, closs_dc, convState_dc);
@@ -58,7 +58,7 @@ function solve_opf(caseName_dc, caseName_ac)
     % Combine all constraints
     Con = [con_dc; con_ac; con_cp];
     
-    %% 5. Set solver options 
+    %% 4. Set solver options 
     if UseCplex
         ops = sdpsettings('solver', 'cplex', 'verbose', 2, 'usex0', 0);
         ops.cplex.mip.tolerances.mipgap = 1e-6;
@@ -72,16 +72,22 @@ function solve_opf(caseName_dc, caseName_ac)
     opfout = optimize(Con, Obj, ops);
     cputime = toc;
     
-    %% 7. Extract Optimization Results
+    %% 5. Extract Optimization Results (Convert to Numeric Values)
+    % For DC variables: call value() and unpack into numeric variables
     var_dc_k = cellfun(@value, var_dc, 'UniformOutput', false);
     [vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k, v2s_dc_k, v2c_dc_k, Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k, ...
         Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k] = var_dc_k{:};
     
+    % For each AC grid: call value() on the variables and unpack
     var_ac_k = cell(ngrids, 1);
     for ng = 1:ngrids
         var_ac_k{ng} = cellfun(@value, var_ac{ng}, 'UniformOutput', false);
         [vn2_ac_k{ng}, pn_ac_k{ng}, qn_ac_k{ng}, pgen_ac_k{ng}, qgen_ac_k{ng}, pij_ac_k{ng}, qij_ac_k{ng}, ss_ac_k{ng}, cc_ac_k{ng}] = var_ac_k{ng}{:};
     end
+    
+    %% 6. Visulization AC/DC OPF Resutls
+    viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac, ...
+        pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, baseMW_dc, pol_dc);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -151,12 +157,12 @@ function solve_opf(caseName_dc, caseName_ac)
       
       for ng = 1:ngrids
           for i = 1:nbranches_ac{ng}
-              formatted_pij_fwd = sprintf('%.3f', pij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * 100);
-              formatted_qij_fwd = sprintf('%.3f', qij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * 100);
-              formatted_pij_bwd = sprintf('%.3f', pij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * 100);
-              formatted_qij_bwd = sprintf('%.3f', qij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * 100);
-              formatted_branch_loss = sprintf('%.3f', abs(pij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * 100 + ...
-                                                          pij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * 100));
+              formatted_pij_fwd = sprintf('%.3f', pij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * baseMVA_ac);
+              formatted_qij_fwd = sprintf('%.3f', qij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * baseMVA_ac);
+              formatted_pij_bwd = sprintf('%.3f', pij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * baseMVA_ac);
+              formatted_qij_bwd = sprintf('%.3f', qij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * baseMVA_ac);
+              formatted_branch_loss = sprintf('%.3f', abs(pij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * baseMVA_ac + ...
+                                                          pij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * baseMVA_ac));
               fprintf(fid, '\n %2d %6d %7d %6d %12s %11s %12s %11s %11s', ng, i, fbus_ac{ng}(i), tbus_ac{ng}(i), ...
                   formatted_pij_fwd, formatted_qij_fwd, formatted_pij_bwd, formatted_qij_bwd, formatted_branch_loss);
           end
@@ -166,8 +172,8 @@ function solve_opf(caseName_dc, caseName_ac)
       totalACPowerLoss = 0;
       for ng = 1:ngrids
           for i = 1:nbranches_ac{ng}
-              totalACPowerLoss = totalACPowerLoss + abs(pij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * 100 + ...
-                                              pij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * 100);
+              totalACPowerLoss = totalACPowerLoss + abs(pij_ac_k{ng}(fbus_ac{ng}(i), tbus_ac{ng}(i)) * baseMVA_ac + ...
+                                              pij_ac_k{ng}(tbus_ac{ng}(i), fbus_ac{ng}(i)) * baseMVA_ac);
           end
       end
       fprintf(fid, '\n The total AC network losses is %.3f MW .', totalACPowerLoss);
@@ -203,9 +209,9 @@ function solve_opf(caseName_dc, caseName_ac)
       fprintf(fid, '\n ------  -----  -----   ---------      ---------      --------');
       
       for i = 1:nbranches_dc
-          formatted_pij_fwd_dc = sprintf('%.3f', pij_dc_k(fbus_dc(i), tbus_dc(i)) * 100 * pol_dc);
-          formatted_pij_bwd_dc = sprintf('%.3f', pij_dc_k(tbus_dc(i), fbus_dc(i)) * 100 * pol_dc);
-          formatted_loss_dc = sprintf('%.3f', abs((pij_dc_k(fbus_dc(i), tbus_dc(i)) + pij_dc_k(tbus_dc(i), fbus_dc(i))) * 100) * pol_dc);
+          formatted_pij_fwd_dc = sprintf('%.3f', pij_dc_k(fbus_dc(i), tbus_dc(i)) * baseMW_dc * pol_dc);
+          formatted_pij_bwd_dc = sprintf('%.3f', pij_dc_k(tbus_dc(i), fbus_dc(i)) * baseMW_dc * pol_dc);
+          formatted_loss_dc = sprintf('%.3f', abs((pij_dc_k(fbus_dc(i), tbus_dc(i)) + pij_dc_k(tbus_dc(i), fbus_dc(i))) * baseMW_dc) * pol_dc);
           fprintf(fid, '\n %5d %6d %6d %11s %14s %13s', i, fbus_dc(i), tbus_dc(i), ...
               formatted_pij_fwd_dc, formatted_pij_bwd_dc, formatted_loss_dc);
       end
@@ -213,7 +219,7 @@ function solve_opf(caseName_dc, caseName_ac)
     
       totalDCPowerLoss = 0;
       for i = 1:nbranches_dc
-          totalDCPowerLoss = totalDCPowerLoss +  abs(value(pij_dc(fbus_dc(i), tbus_dc(i)))*100+value(pij_dc(tbus_dc(i), fbus_dc(i)))*100) * pol_dc;
+          totalDCPowerLoss = totalDCPowerLoss +  abs(value(pij_dc(fbus_dc(i), tbus_dc(i)))*baseMW_dc+value(pij_dc(tbus_dc(i), fbus_dc(i)))*baseMW_dc) * pol_dc;
       end
       fprintf(fid,'\n The totoal DC network losses is %.3f MW .', totalDCPowerLoss);
       fprintf(fid,'\n');
@@ -625,7 +631,7 @@ function solve_opf(caseName_dc, caseName_ac)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, vn2_ac, generator_ac, ...
         nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
-    % SETUP_CP -Set up AC and VSC coupling constraints for power injections and voltage.
+    % SETUPCP -Set up AC and VSC coupling constraints for power injections and voltage.
     %
     %   INPUTS:
     %       ngrids       - Number of AC grids.

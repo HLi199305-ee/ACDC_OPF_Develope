@@ -109,15 +109,13 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   gen_entire_ac_new[:, 3] .= vcat(qgen_ac_k...) .* baseMVA_ac
 
   ########## 5. Construct Network Graph ##########
-  # Combine branch "from" and "to" nodes for AC, DC and converter branches
+  # Define fromNode and toNode 
   fromNode = vcat(branch_entire_ac_new[:, 1],
                   branch_dc_new[:, 1],
                   conv_dc_new[:, 1])
   toNode = vcat(branch_entire_ac_new[:, 2],
                 branch_dc_new[:, 2],
                 conv_dc_new[:, 2])
-  
-  # Construct node list: AC bus numbers followed by DC bus numbers
   allNodes = vcat(bus_entire_ac_new[:, 1], bus_dc_new[:, 1])
   numNodes_total = length(allNodes)
   acNodes = bus_entire_ac_new[:, 1]
@@ -219,7 +217,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   cb = Colorbar(fig[1,2], colormap=ColorSchemes.Oranges, limits=(minEdgePower, maxEdgePower),
                 label = "MVA(MW)", width = 30, height = Relative(0.8))
   
-  # Add Node Markers and display Voltage text
+  # Define node markers and sizes
   for (i, (x, y)) in xy
       if i in acNodes
           if i in genNodes
@@ -249,7 +247,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
       end
   end
   
-  # Add Node Annotations (Node ID and Voltage)
+  # Add node ID and voltage text
   for (i, (x, y)) in xy
       if i in acNodes
           row = findfirst(x -> x == i, bus_entire_ac_new[:, 1])

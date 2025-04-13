@@ -723,6 +723,7 @@ function solve_opf( ac_name::String, dc_name::String)
         pij_ac   = res_setup_ac.var_ac.pij_ac
         qij_ac   = res_setup_ac.var_ac.qij_ac
         ss_ac    = res_setup_ac.var_ac.ss_ac
+        cc_ac    = res_setup_ac.var_ac.cc_ac
 
         # Set up AC/DC coupling constraints
         setup_cp(model, ngrids, nbuses_ac, ngens_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, 
@@ -747,6 +748,31 @@ function solve_opf( ac_name::String, dc_name::String)
         optimize!(model)
 
     end  # end @elapsed block
+
+
+    (vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k, v2s_dc_k, v2c_dc_k, 
+    Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k, Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, 
+    Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k) =
+    (JuMP.value.(x) for x in (vn2_dc, pn_dc, ps_dc, qs_dc, pc_dc, qc_dc, v2s_dc, v2c_dc, 
+                        Ic_dc, lc_dc, pij_dc, lij_dc, Ctt_dc, Ccc_dc, Ctc_dc, 
+                        Stc_dc, Cct_dc, Sct_dc, convPloss_dc))
+
+    vn2_ac_k   = Vector{Any}(undef, ngrids)
+    pn_ac_k    = Vector{Any}(undef, ngrids)
+    qn_ac_k    = Vector{Any}(undef, ngrids)
+    pgen_ac_k  = Vector{Any}(undef, ngrids)
+    qgen_ac_k  = Vector{Any}(undef, ngrids)
+    pij_ac_k   = Vector{Any}(undef, ngrids)
+    qij_ac_k   = Vector{Any}(undef, ngrids)
+    ss_ac_k    = Vector{Any}(undef, ngrids)
+    cc_ac_k    = Vector{Any}(undef, ngrids)
+
+    for ng in 1:ngrids
+        (vn2_ac_k[ng], pn_ac_k[ng], qn_ac_k[ng], pgen_ac_k[ng], qgen_ac_k[ng], 
+        pij_ac_k[ng], qij_ac_k[ng], ss_ac_k[ng], cc_ac_k[ng]) =
+        (JuMP.value.(x) for x in (vn2_ac[ng], pn_ac[ng], qn_ac[ng], pgen_ac[ng], qgen_ac[ng], 
+        pij_ac[ng], qij_ac[ng], ss_ac[ng], cc_ac[ng] ))
+    end
 
 
     # ============================ Print Results =============================
@@ -825,10 +851,10 @@ function solve_opf( ac_name::String, dc_name::String)
         for ng in 1:ngrids
             for i in 1:nbranches_ac[ng][]
                 formatted_pij_fwd = @sprintf("%.3f", value(pij_ac[ng][fbus_ac[ng][i], tbus_ac[ng][i]]) * baseMVA_ac)
-                formatted_qij_fwd = @sprintf("%.3f", value(qij_ac[ng][fbus_ac[ng][i], tbus_ac[ng][i]]) * 100)
-                formatted_pij_bwd = @sprintf("%.3f", value(pij_ac[ng][tbus_ac[ng][i], fbus_ac[ng][i]]) * 100)
-                formatted_qij_bwd = @sprintf("%.3f", value(qij_ac[ng][tbus_ac[ng][i], fbus_ac[ng][i]]) * 100)
-                branch_loss = abs(value(pij_ac[ng][fbus_ac[ng][i], tbus_ac[ng][i]]) * 100 + value(pij_ac[ng][tbus_ac[ng][i], fbus_ac[ng][i]]) * 100)
+                formatted_qij_fwd = @sprintf("%.3f", value(qij_ac[ng][fbus_ac[ng][i], tbus_ac[ng][i]]) * baseMVA_ac)
+                formatted_pij_bwd = @sprintf("%.3f", value(pij_ac[ng][tbus_ac[ng][i], fbus_ac[ng][i]]) * baseMVA_ac)
+                formatted_qij_bwd = @sprintf("%.3f", value(qij_ac[ng][tbus_ac[ng][i], fbus_ac[ng][i]]) * baseMVA_ac)
+                branch_loss = abs(value(pij_ac[ng][fbus_ac[ng][i], tbus_ac[ng][i]]) * baseMVA_ac + value(pij_ac[ng][tbus_ac[ng][i], fbus_ac[ng][i]]) * 100)
             
                 global totalACPowerLoss += branch_loss
 
@@ -894,9 +920,9 @@ function solve_opf( ac_name::String, dc_name::String)
     println(" ------  -----  -----   ---------      ---------      --------")
 
     for i in 1:nbranches_dc
-        formatted_pij_fwd = @sprintf("%.3f", value(pij_dc[fbus_dc[i], tbus_dc[i]]) * 100 * pol_dc)
-        formatted_pij_bwd = @sprintf("%.3f", value(pij_dc[tbus_dc[i], fbus_dc[i]]) * 100 * pol_dc)
-        formatted_loss = @sprintf("%.3f", abs(value(pij_dc[fbus_dc[i], tbus_dc[i]] + pij_dc[tbus_dc[i], fbus_dc[i]]) * 100) * pol_dc)
+        formatted_pij_fwd = @sprintf("%.3f", value(pij_dc[fbus_dc[i], tbus_dc[i]]) * baseMW_dc * pol_dc)
+        formatted_pij_bwd = @sprintf("%.3f", value(pij_dc[tbus_dc[i], fbus_dc[i]]) * baseMW_dc * pol_dc)
+        formatted_loss = @sprintf("%.3f", abs(value(pij_dc[fbus_dc[i], tbus_dc[i]] + pij_dc[tbus_dc[i], fbus_dc[i]]) * baseMW_dc) * pol_dc)
         
         println(
         lpad(i, 7), "  ",                  # Branch index
@@ -913,7 +939,7 @@ function solve_opf( ac_name::String, dc_name::String)
     global totalDCPowerLoss = 0.0
 
     for i in 1:nbranches_dc
-        global totalDCPowerLoss += abs(value(pij_dc[fbus_dc[i], tbus_dc[i]]) * 100 + value(pij_dc[tbus_dc[i], fbus_dc[i]]) * 100) * pol_dc
+        global totalDCPowerLoss += abs(value(pij_dc[fbus_dc[i], tbus_dc[i]]) * baseMW_dc + value(pij_dc[tbus_dc[i], fbus_dc[i]]) * baseMW_dc) * pol_dc
     end
 
     println("The total DC network losses is $(@sprintf("%.3f", totalDCPowerLoss)) MW.")
@@ -921,5 +947,11 @@ function solve_opf( ac_name::String, dc_name::String)
     formatted_time = @sprintf("%.3fs", elapsed_time)
     println("Excution time is ", formatted_time)
 
-    return nothing
+    # ----------------------------
+    # Visualize OPF Results
+    # ---------------------------- 
+    viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac,
+            pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k,
+            pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc)
+    
 end

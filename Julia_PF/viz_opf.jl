@@ -130,7 +130,6 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   end
 
   # Add Node Voltage Text
-  # Compute voltage magnitudes (square root of squared values)
   voltMag_ac = sqrt.(reshape(vcat(vn2_ac_k...), :, 1))
   voltMag_dc = sqrt.(vn2_dc_k)
   voltVal = Vector{Float64}(undef, numNodes_total)

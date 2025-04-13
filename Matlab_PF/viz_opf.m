@@ -1,12 +1,11 @@
 function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac, ...
-    pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, baseMW_dc, pol_dc)
-
+    pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc)
 % VIZ_OPF Visualizes the AC/DC OPF Results
 %
 % INPUTS:
 %   bus_entire_ac       - Complete bus data from the AC network.
 %   branch_entire_ac    - Complete branch data from the AC network.
-%   gen_entire_ac       - Matrix. Complete generator data from the AC network.
+%   gen_entire_ac       - Complete generator data from the AC network.
 %   baseMVA_ac          - AC system base MVA value.
 %   pgen_ac_k           - Optimized resutls of generator active power.
 %   qgen_ac_k           - Optimized results of generator reactive power.
@@ -21,9 +20,10 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
 %   pol_dc              - Polarity of the DC network
 %   vn2_dc_k            - Optimized results of the DC network.
 %   pij_dc_k            - Optimized resutls of the DC branch active power.
-%   ps_dc_k             - Optimized results of the VSC PCC power.
+%   ps_dc_k             - Optimized results of the VSC PCC active power.
+%   qs_dc_k             - Optimized results of the VSC PCC reactive power.
 
-% OUTPUTS: None
+% OUTPUTS: Figure
 
 %% Reorder AC Data---------------------------------------------------------
 numBuses_ac = size(bus_entire_ac, 1);
@@ -182,7 +182,7 @@ for k = 1:numEdges
         Newj = toN;
         row = find( (conv_dc_new(:,1) == Newi & conv_dc_new(:,2) == Newj) | ...
                     (conv_dc_new(:,1) == Newj & conv_dc_new(:,2) == Newi) );
-        branchPowerConv = abs(ps_dc_k(row)) * baseMVA_ac;
+        branchPowerConv =  sqrt(ps_dc_k(row)^2+qs_dc_k(row)^2) * baseMVA_ac;
         edgePower{k} = branchPowerConv;
     end
 end
@@ -220,12 +220,12 @@ for i = 1:numNodes
     currentBus = nodeNums(i);
     if ismember(currentBus, acBusNums)
         idx_ac = find(bus_entire_ac_new(:,1) == currentBus, 1);
-        Vmag_ac = sqrt(vertcat(vn2_ac_k{:}));
-        voltageVal = Vmag_ac(idx_ac);
+        voltMag_ac = sqrt(vertcat(vn2_ac_k{:}));
+        voltageVal = voltMag_ac(idx_ac);
     elseif ismember(currentBus, dcBusNums)
         idx_dc = find(bus_dc_new(:,1) == currentBus, 1);
-        Vmag_dc = sqrt(vn2_dc_k(idx_dc));
-        voltageVal = Vmag_dc;
+        voltMag_dc = sqrt(vn2_dc_k(idx_dc));
+        voltageVal = voltMag_dc;
     else
         voltageVal = NaN;
     end
@@ -256,10 +256,11 @@ drawnow;
 markACLoad = scatter(NaN, NaN, 80, [1, 0, 0], 'o', 'filled');   
 markACGen  = scatter(NaN, NaN, 80, [0, 1, 0], 'o', 'filled');   
 markDCConv = scatter(NaN, NaN, 80, [0, 0, 1], '^', 'filled');   
-markLine = plot([0, 0.1], [0, 0], 'Color', [0.5, 0.5, 0.5], 'LineWidth', 1); 
+markLine = plot(NaN, NaN, 'color', [0,0,0], 'LineWidth', 1); 
 
 legend([markACLoad, markACGen, markDCConv, markLine], ...
     {'Loads of AC grids', 'Generator powers of AC grids', 'VSC converter', 'Branch lines'}, ...
     'Location', 'southeast', 'FontSize', 10);
 
 end
+

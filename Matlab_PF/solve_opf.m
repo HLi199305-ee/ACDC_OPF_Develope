@@ -87,7 +87,7 @@ function solve_opf(caseName_dc, caseName_ac)
     
     %% 6. Visulization AC/DC OPF Resutls
     viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac, ...
-        pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, baseMW_dc, pol_dc);
+        pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

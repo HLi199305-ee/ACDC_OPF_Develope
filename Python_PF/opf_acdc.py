@@ -1,9 +1,12 @@
 import time
 import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
 from typing import Dict, Any
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from params_acdc import params_ac, params_dc
+from viz_opf import viz_opf
 
 def solve_opf(acgrid_name: str, dcgrid_name: str):
     
@@ -12,38 +15,39 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
     # -------------------------------
     # 1: Load DC and AC Parameters
     # -------------------------------
-    res_params_dc   = params_dc(dcgrid_name)
-    network_dc      = res_params_dc["network_dc"]
-    baseMW_dc       = res_params_dc["baseMW_dc"]
-    bus_dc          = res_params_dc["bus_dc"]
-    branch_dc       = res_params_dc["branch_dc"]
-    conv_dc         = res_params_dc["conv_dc"]
-    pol_dc          = res_params_dc["pol_dc"]
-    nbuses_dc       = res_params_dc["nbuses_dc"]
-    nbranches_dc    = res_params_dc["nbranches_dc"]
-    nconvs_dc       = res_params_dc["nconvs_dc"]
-    fbus_dc         = res_params_dc["fbus_dc"]
-    tbus_dc         = res_params_dc["tbus_dc"]
-    ybus_dc         = res_params_dc["ybus_dc"]
-    rtf_dc          = res_params_dc["rtf_dc"]
-    xtf_dc          = res_params_dc["xtf_dc"]
-    bf_dc           = res_params_dc["bf_dc"]
-    rc_dc           = res_params_dc["rc_dc"]
-    xc_dc           = res_params_dc["xc_dc"]
-    ztfc_dc         = res_params_dc["ztfc_dc"]
-    gtfc_dc         = res_params_dc["gtfc_dc"]
-    btfc_dc         = res_params_dc["btfc_dc"]
-    aloss_dc        = res_params_dc["aloss_dc"]
-    bloss_dc        = res_params_dc["bloss_dc"]
-    closs_dc        = res_params_dc["closs_dc"]
-    convState       = res_params_dc["convState"]
-    basekV_dc       = res_params_dc["basekV_dc"]
+    res_params_dc       = params_dc(dcgrid_name)
+    network_dc          = res_params_dc["network_dc"]
+    baseMW_dc           = res_params_dc["baseMW_dc"]
+    bus_dc              = res_params_dc["bus_dc"]
+    branch_dc           = res_params_dc["branch_dc"]
+    conv_dc             = res_params_dc["conv_dc"]
+    pol_dc              = res_params_dc["pol_dc"]
+    nbuses_dc           = res_params_dc["nbuses_dc"]
+    nbranches_dc        = res_params_dc["nbranches_dc"]
+    nconvs_dc           = res_params_dc["nconvs_dc"]
+    fbus_dc             = res_params_dc["fbus_dc"]
+    tbus_dc             = res_params_dc["tbus_dc"]
+    ybus_dc             = res_params_dc["ybus_dc"]
+    rtf_dc              = res_params_dc["rtf_dc"]
+    xtf_dc              = res_params_dc["xtf_dc"]
+    bf_dc               = res_params_dc["bf_dc"]
+    rc_dc               = res_params_dc["rc_dc"]
+    xc_dc               = res_params_dc["xc_dc"]
+    ztfc_dc             = res_params_dc["ztfc_dc"]
+    gtfc_dc             = res_params_dc["gtfc_dc"]
+    btfc_dc             = res_params_dc["btfc_dc"]
+    aloss_dc            = res_params_dc["aloss_dc"]
+    bloss_dc            = res_params_dc["bloss_dc"]
+    closs_dc            = res_params_dc["closs_dc"]
+    convState           = res_params_dc["convState"]
+    basekV_dc           = res_params_dc["basekV_dc"]
 
     res_params_ac       = params_ac(acgrid_name)
     network_ac          = res_params_ac["network_ac"]
     baseMVA_ac          = res_params_ac["baseMVA_ac"]
     bus_entire_ac       = res_params_ac["bus_entire_ac"]
     branch_entire_ac    = res_params_ac["branch_entire_ac"]
+    generator_entire_ac = res_params_ac["generator_entire_ac"]
     gencost_entire_ac   = res_params_ac["gencost_entire_ac"]
     ngrids              = res_params_ac["ngrids"]
     bus_ac              = res_params_ac["bus_ac"]
@@ -251,6 +255,33 @@ def solve_opf(acgrid_name: str, dcgrid_name: str):
 
     elapsed_time = end - start
     print(f"Excution time is {elapsed_time:.3f} s.")
+
+    (vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k, v2s_dc_k, v2c_dc_k,
+     Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k, Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, 
+     Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k) = extract_vals_dc(model, nbuses_dc, nconvs_dc)
+    
+    (vn2_ac_k, pn_ac_k, qn_ac_k, pgen_ac_k, qgen_ac_k,
+     pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k) = extract_vals_ac(model, ngrids, nbuses_ac, ngens_ac)
+    
+    viz_opf(
+    bus_entire_ac,
+    branch_entire_ac,
+    bus_dc,
+    branch_dc,
+    conv_dc,
+    generator_entire_ac,
+    pgen_ac_k,
+    qgen_ac_k,
+    baseMVA_ac,
+    vn2_ac_k,
+    vn2_dc_k,
+    pij_ac_k,
+    qij_ac_k,
+    pij_dc_k,
+    ps_dc_k,
+    qs_dc_k,
+    baseMW_dc,
+    pol_dc)
 
     return model
 
@@ -844,6 +875,104 @@ def setup_obj(model:ConcreteModel, res_params_dc: Dict[str, Any], res_params_ac:
         return sum(obj[ng] for ng in range(ngrids))
 
     model.objective = Objective(rule=objective_rule, sense=minimize)
+
+def extract_vals_dc(
+    model: ConcreteModel,
+    nbuses_dc: int,
+    nconvs_dc: int,
+) -> None:
+    """
+    Extract DC side optimization variable values from the Pyomo model.
+    
+    Returns a tuple of NumPy arrays corresponding to:
+      vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k,
+      v2s_dc_k, v2c_dc_k, Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k,
+      Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k
+    """
+    # For scalar variables indexed by DC bus, or by converter, use list comprehensions.
+    vn2_dc_k = np.array([value(model.vn2_dc[i]) for i in range(nbuses_dc)])
+    pn_dc_k  = np.array([value(model.pn_dc[i]) for i in range(nbuses_dc)])
+    ps_dc_k  = np.array([value(model.ps_dc[i]) for i in range(nconvs_dc)])
+    qs_dc_k  = np.array([value(model.qs_dc[i]) for i in range(nconvs_dc)])
+    pc_dc_k  = np.array([value(model.pc_dc[i]) for i in range(nconvs_dc)])
+    qc_dc_k  = np.array([value(model.qc_dc[i]) for i in range(nconvs_dc)])
+    v2s_dc_k = np.array([value(model.v2s_dc[i]) for i in range(nconvs_dc)])
+    v2c_dc_k = np.array([value(model.v2c_dc[i]) for i in range(nconvs_dc)])
+    Ic_dc_k  = np.array([value(model.Ic_dc[i]) for i in range(nconvs_dc)])
+    lc_dc_k  = np.array([value(model.lc_dc[i]) for i in range(nconvs_dc)])
+    
+    # For 2D variables, iterate over both indices.
+    pij_dc_k = np.array([[value(model.pij_dc[i, j]) for j in range(nbuses_dc)]
+                           for i in range(nbuses_dc)])
+    lij_dc_k = np.array([[value(model.lij_dc[i, j]) for j in range(nbuses_dc)]
+                           for i in range(nbuses_dc)])
+    
+    # For converter-side scalar variables
+    Ctt_dc_k = np.array([value(model.Ctt_dc[i]) for i in range(nconvs_dc)])
+    Ccc_dc_k = np.array([value(model.Ccc_dc[i]) for i in range(nconvs_dc)])
+    Ctc_dc_k = np.array([value(model.Ctc_dc[i]) for i in range(nconvs_dc)])
+    Stc_dc_k = np.array([value(model.Stc_dc[i]) for i in range(nconvs_dc)])
+    Cct_dc_k = np.array([value(model.Cct_dc[i]) for i in range(nconvs_dc)])
+    Sct_dc_k = np.array([value(model.Sct_dc[i]) for i in range(nconvs_dc)])
+    convPloss_dc_k = np.array([value(model.convPloss_dc[i]) for i in range(nconvs_dc)])
+    
+    return (vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k,
+            v2s_dc_k, v2c_dc_k, Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k,
+            Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k)
+
+def extract_vals_ac(
+    model: ConcreteModel,
+    ngrids: int,
+    nbuses_ac: int,
+    ngens_ac: int,
+) -> None:
+    """
+    Extract AC side optimization variable values from the model.
+    Assumes variables are indexed by (ng, i) for scalar variables and (ng, i, j) for matrix variables.
+    
+    Returns a tuple containing lists (one entry per grid) for:
+       vn2_ac_k, pn_ac_k, qn_ac_k, pgen_ac_k, qgen_ac_k,
+       pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k.
+    """
+    vn2_ac_k  = []
+    pn_ac_k   = []
+    qn_ac_k   = []
+    pgen_ac_k = []
+    qgen_ac_k = []
+    pij_ac_k  = []
+    qij_ac_k  = []
+    ss_ac_k   = []
+    cc_ac_k   = []
+    
+    for ng in range(ngrids):
+        # For each grid, assume the AC variables are defined for buses 0 to nbuses_ac[ng]-1
+        vn2 = np.array([value(model.vn2_ac[ng, i]) for i in range(nbuses_ac[ng])])
+        pn  = np.array([value(model.pn_ac[ng, i]) for i in range(nbuses_ac[ng])])
+        qn  = np.array([value(model.qn_ac[ng, i]) for i in range(nbuses_ac[ng])])
+        pgen = np.array([value(model.pgen_ac[ng, i]) for i in range(ngens_ac[ng])])
+        qgen = np.array([value(model.qgen_ac[ng, i]) for i in range(ngens_ac[ng])])
+        pij = np.array([[value(model.pij_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
+                        for i in range(nbuses_ac[ng])])
+        qij = np.array([[value(model.qij_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
+                        for i in range(nbuses_ac[ng])])
+        ss = np.array([[value(model.ss_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
+                       for i in range(nbuses_ac[ng])])
+        cc = np.array([[value(model.cc_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
+                       for i in range(nbuses_ac[ng])])
         
+        vn2_ac_k.append(vn2)
+        pn_ac_k.append(pn)
+        qn_ac_k.append(qn)
+        pgen_ac_k.append(pgen)
+        qgen_ac_k.append(qgen)
+        pij_ac_k.append(pij)
+        qij_ac_k.append(qij)
+        ss_ac_k.append(ss)
+        cc_ac_k.append(cc)
+    
+    return (vn2_ac_k, pn_ac_k, qn_ac_k, pgen_ac_k, qgen_ac_k,
+            pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k)
+    
+   
 if __name__ == "__main__":
     result_opf = solve_opf("ac14ac57", "mtdc3slack_a")

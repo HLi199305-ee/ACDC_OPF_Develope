@@ -93,14 +93,12 @@ ACNetworkParams params_ac(const std::string& acgrid_name) {
     generator_ac_entire = network_ac["generator"];
     gencost_ac_entire = network_ac["gencost"];
 
-    /* Determine the number of AC grids based on unique grid IDs (assumed to be in column 14) */
+    // Initialization for storing grid data
     std::set<int> unique_values;
     for (int i = 0; i < bus_ac_entire.rows(); ++i) {
         unique_values.insert(static_cast<int>(bus_ac_entire(i, 13)));
     }
     ngrids = static_cast<int>(unique_values.size());
-
-    // Resize vectors for grid-specific data
     bus_ac.resize(ngrids);
     branch_ac.resize(ngrids);
     generator_ac.resize(ngrids);
@@ -127,7 +125,7 @@ ACNetworkParams params_ac(const std::string& acgrid_name) {
 
         std::vector<int> bus_rows, branch_rows, generator_rows, gencost_rows;
 
-        // Partition bus data: grid ID is in column 14 (1-indexed)
+        // Partition bus data
         for (int i = 0; i < bus_ac_entire.rows(); ++i) {
             if (static_cast<int>(bus_ac_entire(i, 13)) == ng + 1) {
                 bus_rows.push_back(i);
@@ -138,7 +136,7 @@ ACNetworkParams params_ac(const std::string& acgrid_name) {
             bus_ac[ng].row(i) = bus_ac_entire.row(bus_rows[i]);
         }
 
-        // Partition branch data: grid ID is in column 14
+        // Partition branch data
         for (int i = 0; i < branch_ac_entire.rows(); ++i) {
             if (static_cast<int>(branch_ac_entire(i, 13)) == ng + 1) {
                 branch_rows.push_back(i);
@@ -149,7 +147,7 @@ ACNetworkParams params_ac(const std::string& acgrid_name) {
             branch_ac[ng].row(i) = branch_ac_entire.row(branch_rows[i]);
         }
 
-        // Partition generator data: grid ID is in column 21
+        // Partition generator data
         for (int i = 0; i < generator_ac_entire.rows(); ++i) {
             if (static_cast<int>(generator_ac_entire(i, 21)) == ng + 1) {
                 generator_rows.push_back(i);
@@ -160,7 +158,7 @@ ACNetworkParams params_ac(const std::string& acgrid_name) {
             generator_ac[ng].row(i) = generator_ac_entire.row(generator_rows[i]);
         }
 
-        // Partition generator cost data: grid ID is in column 7
+        // Partition generator cost data
         for (int i = 0; i < gencost_ac_entire.rows(); ++i) {
             if (static_cast<int>(gencost_ac_entire(i, 7)) == ng + 1) {
                 gencost_rows.push_back(i);

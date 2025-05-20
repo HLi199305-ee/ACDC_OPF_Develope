@@ -34,7 +34,7 @@ function [network_dc, baseMW_dc, bus_dc, branch_dc, conv_dc, pol_dc, nbuses_dc, 
 %   aloss_dc     - Vector. Converter loss parameters A (p.u.).
 %   bloss_dc     - Vector. Converter loss parameters B (p.u.).
 %   closs_dc     - Vector. Converter loss parameters C (p.u.).
-%   convState    - Vector. Converter state indicators (1 for inverter, 0 for rectifier).
+%   convState_dc    - Vector. Converter state indicators (1 for inverter, 0 for rectifier).
 %
 % See also: create_dc.m, mkaeYbus.m
 

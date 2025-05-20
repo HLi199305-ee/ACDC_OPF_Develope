@@ -23,7 +23,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
 %   ps_dc_k             - Optimized results of the VSC PCC active power.
 %   qs_dc_k             - Optimized results of the VSC PCC reactive power.
 
-% OUTPUTS: Figure
+% OUTPUTS: None
 
 %% Reorder AC Data---------------------------------------------------------
 numBuses_ac = size(bus_entire_ac, 1);
@@ -72,7 +72,7 @@ gen_entire_ac_new(:, 1) = mappingMatrix(idx, 2);
 gen_entire_ac_new(:, 2) = vertcat(pgen_ac_k{:}) * baseMVA_ac;
 gen_entire_ac_new(:, 3) = vertcat(qgen_ac_k{:}) * baseMVA_ac;
 
-%% Construct Network Graph
+%% Construct Network Graph-------------------------------------------------
 fromNode = [branch_entire_ac_new(:, 1); branch_dc_new(:, 1); conv_dc_new(:, 1)];
 toNode   = [branch_entire_ac_new(:, 2); branch_dc_new(:, 2); conv_dc_new(:, 2)];
 allNodes = unique([fromNode; toNode]);
@@ -93,7 +93,7 @@ title('AC/DC OPF Results', 'FontSize', 12, 'FontWeight', 'bold');
 hold on;
 
 
-%% Editing AC node 
+%% Editing AC node---------------------------------------------------------
 nodeNums = [bus_entire_ac_new(:, 1); bus_dc_new(:, 1)];
 numNodes = numBuses_ac + numBuses_dc;
 
@@ -104,39 +104,39 @@ genBusNums = gen_entire_ac_new(:, 1);
 for i = 1:length(acBusNums)
     idx = acBusNums(i);
     if ismember(idx, genBusNums)
-        loadPower = sqrt( bus_entire_ac_new(find(bus_entire_ac_new(:,1) == idx), 3).^2 + ...
-                           bus_entire_ac_new(find(bus_entire_ac_new(:,1) == idx), 4).^2 );
-        genPower = sqrt( gen_entire_ac_new(find(gen_entire_ac_new(:,1) == idx), 2).^2 + ...
-                          gen_entire_ac_new(find(gen_entire_ac_new(:,1) == idx), 3).^2 );
+        loadPower = sqrt( bus_entire_ac_new(find(bus_entire_ac_new(:, 1) == idx), 3).^2 + ...
+                           bus_entire_ac_new(find(bus_entire_ac_new(:, 1) == idx), 4).^2 );
+        genPower = sqrt( gen_entire_ac_new(find(gen_entire_ac_new(:, 1) == idx), 2).^2 + ...
+                          gen_entire_ac_new(find(gen_entire_ac_new(:, 1) == idx), 3).^2 );
         if loadPower >= genPower
-            powerSize = 80 + 1e-3 + (loadPower-80);
+            powerSize = 1e-3 + loadPower;
             scatter(p.XData(idx), p.YData(idx), powerSize, [1 0 0], 'o', 'filled');
-            powerSize = 80 + (genPower-80);
+            powerSize = genPower;
             scatter(p.XData(idx), p.YData(idx), powerSize, [0 1 0], 'o', 'filled');
             drawnow;
         else
-            powerSize = 80 + (genPower-80);
+            powerSize = genPower;
             scatter(p.XData(idx), p.YData(idx), powerSize, [0 1 0], 'o', 'filled');
-            powerSize = 80 + 1e-3 + (loadPower-80);
+            powerSize = 1e-3 + loadPower;
             scatter(p.XData(idx), p.YData(idx), powerSize, [1 0 0], 'o', 'filled');
             drawnow;
         end
     else
-        loadPower = sqrt( bus_entire_ac_new(find(bus_entire_ac_new(:,1) == idx), 3).^2 + ...
-                           bus_entire_ac_new(find(bus_entire_ac_new(:,1) == idx), 4).^2 );
-        powerSize = 80 + 1e-3 + (loadPower-80);
+        loadPower = sqrt( bus_entire_ac_new(find(bus_entire_ac_new(:, 1) == idx), 3).^2 + ...
+                           bus_entire_ac_new(find(bus_entire_ac_new(:, 1) == idx), 4).^2 );
+        powerSize = 1e-3 + loadPower;
         scatter(p.XData(idx), p.YData(idx), powerSize, [1 0 0], 'o', 'filled');
         drawnow;
     end
 end
 
-%% Editing DC node 
+%% Editing DC node---------------------------------------------------------
 dcIndices = find(ismember(nodeNums, dcBusNums));
 hold on;
 scatter(p.XData(dcIndices), p.YData(dcIndices), 80, [0 0 1], '^', 'filled');
 axis off;
 
-%% Editing Edge and Add Colormap of Branch Power
+%% Editing Edge and Add Colormap of Branch Power---------------------------
 numEdges = numedges(Graph);
 edgeColors = zeros(numEdges, 3);
 numACedges   = size(branch_entire_ac_new, 1);
@@ -193,29 +193,35 @@ edgePowerValues = cell2mat(edgePower);
 minEdgePower = min(edgePowerValues);
 maxEdgePower = max(edgePowerValues);
 
-lowEdgeColor = [0.9, 0.9, 0.9];
-highEdgeColor = [0.1, 0.0, 0.1];
+orangesMap = [
+    1.00  0.96  0.92 ;   
+    1.00  0.90  0.81 ;
+    0.99  0.82  0.64 ;
+    0.99  0.68  0.42 ;
+    0.99  0.55  0.23 ;
+    0.95  0.41  0.07 ;
+    0.85  0.28  0.00 ;
+    0.65  0.21  0.01 ;
+    0.50  0.15  0.02 ];  
 
-for e = 1:numEdges
-    normVal = (edgePowerValues(e) - minEdgePower) / (maxEdgePower - minEdgePower);
-    edgeColors(e,:) = lowEdgeColor + normVal * (highEdgeColor - lowEdgeColor);
-end
+nSteps = 512;
+x = linspace(1, size(orangesMap,1), nSteps);
+orangesFine = interp1(1:size(orangesMap,1), orangesMap, x);
+
+normVals = (edgePowerValues - minEdgePower) / (maxEdgePower - minEdgePower);
+edgeColors = interp1(linspace(0,1,nSteps), orangesFine, normVals);
 
 p.EdgeColor = edgeColors;
 
-nSteps = 512;
-purpleMap = [linspace(lowEdgeColor(1), highEdgeColor(1), nSteps)', ...
-             linspace(lowEdgeColor(2), highEdgeColor(2), nSteps)', ...
-             linspace(lowEdgeColor(3), highEdgeColor(3), nSteps)'];
-colormap(purpleMap);
+colormap(orangesFine);
 caxis([minEdgePower, maxEdgePower]);
 c = colorbar;
-c.Label.String = 'MVA(MW)';
+c.Label.String = 'Branch Power/MVA(MW)';
 c.Label.FontSize = 12;
 c.Label.FontWeight = 'bold';
 drawnow;
 
-%% Add Text to Node, like Node Number, Node Voltage
+%% Add Text to Node, like Node Number, Node Voltage------------------------
 for i = 1:numNodes
     currentBus = nodeNums(i);
     if ismember(currentBus, acBusNums)
@@ -230,7 +236,7 @@ for i = 1:numNodes
         voltageVal = NaN;
     end
     voltageStr = num2str(voltageVal, '%.3f');
-    text(p.XData(i), p.YData(i)-0.025, [voltageStr 'p.u.'], 'Color', [0.5, 0, 0.5], ...
+    text(p.XData(i), p.YData(i)-0.025, [voltageStr 'p.u.'], 'Color', [0.5, 0.5, 0.5], ...
          'FontSize', 10, 'FontWeight', 'normal', ...
          'HorizontalAlignment', 'center', 'VerticalAlignment', 'top');
 end
@@ -252,14 +258,14 @@ for i = 1:numNodes
 end
 drawnow;
 
-%% Mark
+%% Mark--------------------------------------------------------------------
 markACLoad = scatter(NaN, NaN, 80, [1, 0, 0], 'o', 'filled');   
 markACGen  = scatter(NaN, NaN, 80, [0, 1, 0], 'o', 'filled');   
 markDCConv = scatter(NaN, NaN, 80, [0, 0, 1], '^', 'filled');   
-markLine = plot(NaN, NaN, 'color', [0,0,0], 'LineWidth', 1); 
+markLine = plot(NaN, NaN, 'color', [0.85, 0.5, 0.1], 'LineWidth', 1); 
 
 legend([markACLoad, markACGen, markDCConv, markLine], ...
-    {'Loads of AC grids', 'Generator powers of AC grids', 'VSC converter', 'Branch lines'}, ...
+    {'AC Loads', 'AC Generators', 'VSC Converters', 'Branch Lines'}, ...
     'Location', 'southeast', 'FontSize', 10);
 
 end

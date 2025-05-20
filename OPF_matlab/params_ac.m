@@ -8,7 +8,7 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, gen_entire_ac
 %   compute and return AC grid parameters.
 %
 %   INPUTS:
-%       caseName_ac -  A string for for the AC network case.
+%       caseName_ac - A string for for the AC network case.
 %
 %   OUTPUTS:
 %       network_ac         - Structure. Containing all AC network data.
@@ -126,4 +126,5 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, gen_entire_ac
     end
 
 end
+
 

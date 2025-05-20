@@ -1,4 +1,4 @@
-% function benchmark_power_flow()
+% function benchmarkTools()
 %     tic;
 %     solve_opf('mtdc3slack_a', 'ac14ac57');  % Call your power flow function
 %     exec_time = toc;
@@ -7,12 +7,13 @@
 %     fprintf('Execution Time: %.6f seconds\n', exec_time);
 %     fprintf('Memory Usage: %.2f MB\n', mem_info.MemUsedMATLAB / 1e6);
 % end
-function benchmark_power_flow()
+function benchmarkTools()
     % AC/DC OPF Benchmark for MATLAB
     fprintf('\n====== AC/DC OPF MATLAB Benchmark ======\n\n');
 
     % List of test cases
-    test_cases = {'ac14ac57', 'ac57ac118', 'ac9ac14'};
+    test_cases = {'ac9ac14','ac14ac57',...
+        'ac57ac118', 'ac118ac300'};
     dc_case = 'mtdc3slack_a';  % Fixed DC case for all tests
     
     % Store results
@@ -25,7 +26,10 @@ function benchmark_power_flow()
         fprintf('\n Running test case: %s\n', case_name);
         
         % to compile code and load data
-        solve_opf(dc_case, case_name);
+        solve_opf(dc_case, case_name, ...
+          'vscControl', true, ...
+          'writeTxt', false, ...
+          'plotResult', false);
         
         % Benchmark timing
         num_runs = 5;  % Number of runs for more stable timing
@@ -33,7 +37,10 @@ function benchmark_power_flow()
         
         for j = 1:num_runs
             tstart = tic;
-            solve_opf(dc_case, case_name);
+            solve_opf(dc_case, case_name,...
+            'vscControl', true, ...
+            'writeTxt', false, ...
+            'plotResult', false);
             times(j) = toc(tstart);
         end
         
@@ -45,7 +52,10 @@ function benchmark_power_flow()
         
         % Memory measurement (approximate)
         mem_before = memory;
-        solve_opf(dc_case, case_name);
+        solve_opf(dc_case, case_name, ...
+          'vscControl', true, ...
+          'writeTxt', false, ...
+          'plotResult', false);
         mem_after = memory;
         mem_usage = (mem_after.MemUsedMATLAB - mem_before.MemUsedMATLAB) / 1e6;  % MB
         
@@ -94,5 +104,5 @@ function benchmark_power_flow()
     end
     
     % Save results to file
-    save('benchmark_results.mat', 'results');
-end        
+    save('benchmark_matlab.mat', 'results');
+end   

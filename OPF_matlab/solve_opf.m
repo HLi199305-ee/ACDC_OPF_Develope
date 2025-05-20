@@ -1,4 +1,4 @@
-function solve_opf(caseName_dc, caseName_ac)
+function solve_opf(caseName_dc, caseName_ac, varargin)
 
 % SOLVE_OPF - Perform AC/DC Optimal Power Flow (OPF) analysis using YALMIP.
 %
@@ -9,11 +9,27 @@ function solve_opf(caseName_dc, caseName_ac)
 %   INPUTS:
 %       caseName_ac - Case name for the AC grid (e.g., 'ac14ac57')
 %       caseName_dc - Case name for the DC grid (e.g., 'mtdc3slack_a')
+%       vscControl  - Enable VSC control constraint (default is 'true')
+%       writeTxt    - Enable save of printed AC/DC OPF results as a .txt
+%       file (default is 'false')
+%       plotResults - Enable visulization of AC/DC OPF results (default is
+%       'true')
 %
 %   OUTPUTS:
 %       Printed AC/DC OPF results.
 % 
 %   See also: params_ac.m, params_dc.m
+
+    %% 0. Function Initialization
+    p = inputParser;
+    addParameter(p, 'vscControl', false);     
+    addParameter(p, 'writeTxt', false);      
+    addParameter(p, 'plotResult', true);    
+    parse(p, varargin{:});
+
+    vscControl = p.Results.vscControl;
+    writeTxt   = p.Results.writeTxt;
+    plotResult = p.Results.plotResult;
 
      %% 1. Load AC and DC Parameters
     [network_dc, baseMW_dc, bus_dc, branch_dc, conv_dc, pol_dc, nbuses_dc, nbranches_dc, nconvs_dc, fbus_dc, tbus_dc, ...
@@ -23,17 +39,10 @@ function solve_opf(caseName_dc, caseName_ac)
     [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, gen_entire_ac, gencost_entire_ac, ...
         ngrids, bus_ac, branch_ac, generator_ac, gencost_ac, recRef_ac, ...
         pd_ac, qd_ac, nbuses_ac, nbranches_ac, ngens_ac, GG_ac, ...
-        BB_ac, GG_ft_ac, BB_ft_ac, GG_tf_ac, BB_tf_ac, fbus_ac, tbus_ac] = params_ac(caseName_ac);
-    
-    %% 2. Choose Solver
-    ANSWER = questdlg('Select Solver with Yalmip:', 'acdcopf', ...
-        'Gurobi-solver','Cplex-solver','C');
-    UseCplex = strcmp(ANSWER, 'Cplex-solver');
-    UseGurobi = strcmp(ANSWER, 'Gurobi-solver');
-    
-    tic;  % Start timer
-    
-    %% 3. Execute AC/DC OPF
+        BB_ac, GG_ft_ac, BB_ft_ac, GG_tf_ac, BB_tf_ac, fbus_ac, tbus_ac] = params_ac(caseName_ac);    
+ 
+    tic; 
+    %% 2. Execute AC/DC OPF
     % Set up DC variables and constraints
     [var_dc, lb_dc, ub_dc, con_dc] = setup_dc(nbuses_dc, nconvs_dc, bus_dc, conv_dc, ybus_dc, pol_dc, baseMW_dc, ...
         gtfc_dc, btfc_dc, aloss_dc, bloss_dc, closs_dc, convState_dc);
@@ -58,21 +67,14 @@ function solve_opf(caseName_dc, caseName_ac)
     % Combine all constraints
     Con = [con_dc; con_ac; con_cp];
     
-    %% 4. Set solver options 
-    if UseCplex
-        ops = sdpsettings('solver', 'cplex', 'verbose', 2, 'usex0', 0);
-        ops.cplex.mip.tolerances.mipgap = 1e-6;
-    elseif UseGurobi
-        ops = sdpsettings('solver', 'gurobi', 'verbose', 2, ...
+    %% 3. Set solver options 
+    ops = sdpsettings('solver', 'gurobi', 'verbose', 2, ...
             'gurobi.TimeLimit', 600, 'gurobi.Threads', 8, 'gurobi.Presolve', 2);
-    else
-        ops = sdpsettings('verbose', 2);
-    end
     
     opfout = optimize(Con, Obj, ops);
     cputime = toc;
     
-    %% 5. Extract Optimization Results (Convert to Numeric Values)
+    %% 4. Extract Optimization Results (Convert to Numeric Values)
     % For DC variables: call value() and unpack into numeric variables
     var_dc_k = cellfun(@value, var_dc, 'UniformOutput', false);
     [vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k, v2s_dc_k, v2c_dc_k, Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k, ...
@@ -85,16 +87,22 @@ function solve_opf(caseName_dc, caseName_ac)
         [vn2_ac_k{ng}, pn_ac_k{ng}, qn_ac_k{ng}, pgen_ac_k{ng}, qgen_ac_k{ng}, pij_ac_k{ng}, qij_ac_k{ng}, ss_ac_k{ng}, cc_ac_k{ng}] = var_ac_k{ng}{:};
     end
     
-    %% 6. Visulization AC/DC OPF Resutls
-    viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac, ...
-        pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc);
-    
+    %% 5. Visulization AC/DC OPF Resutls
+    if plotResult
+        viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac, ...
+            pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k, pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc);
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Set Output Directory (1 = command window)
-      fid = 1;
-    
-    %% 1. Print OPF Results of AC Grid Bus
+    if writeTxt
+        filePath = fullfile(pwd, 'opf_results.txt');
+        fid = fopen(filePath, 'w', 'n', 'UTF-8');  
+    else
+        fid = 1;  
+    end
+  
+    %%  Print OPF Results of AC Grid Bus
       fprintf(fid, '\n=================================================================================');
       fprintf(fid, '\n|      AC Grids Bus Data                                                        |');
       fprintf(fid, '\n=================================================================================');
@@ -147,7 +155,7 @@ function solve_opf(caseName_dc, caseName_ac)
       fprintf(fid, '\n The total generation cost is ＄%.2f/MWh(€%.2f/MWh)', totalGenerationCost, totalGenerationCost/1.08);
       fprintf(fid, '\n');
     
-    %% 2. Print OPF Results of AC Grid Branch
+    %% Print OPF Results of AC Grid Branch
       fprintf(fid, '\n===========================================================================================');
       fprintf(fid, '\n|     AC Grids Branch Data                                                                |');
       fprintf(fid, '\n===========================================================================================');
@@ -179,7 +187,7 @@ function solve_opf(caseName_dc, caseName_ac)
       fprintf(fid, '\n The total AC network losses is %.3f MW .', totalACPowerLoss);
       fprintf(fid, '\n');
      
-     %% 3. Print OPF Results of MTDC Bus
+     %% Print OPF Results of MTDC Bus
       fprintf(fid, '\n================================================================================');
       fprintf(fid, '\n|     MTDC Bus Data                                                            |');
       fprintf(fid, '\n================================================================================');
@@ -226,6 +234,11 @@ function solve_opf(caseName_dc, caseName_ac)
     
       fprintf(fid,'\n Execution time is %.3fs .',cputime);
       fprintf(fid,'\n');
+
+      if writeTxt
+          fclose(fid);
+          fprintf('OPF results written to: %s\n', filePath);
+      end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function [var_dc, lb_dc, ub_dc, con_dc] = setup_dc(nbuses_dc, nconvs_dc, bus_dc, conv_dc, ybus_dc, pol_dc, baseMW_dc, ...
@@ -442,30 +455,32 @@ function solve_opf(caseName_dc, caseName_ac)
         % --- VSC Converter Control Constraints ---
         % If we hope control setpoints of VSC converter be optimized, 
         % the below constraints need to be removed
-        for i = 1:nconvs_dc   
-            % dc side control mode
-            if conv_dc(i, 4) == 1   % p control
-                con_dc = [con_dc; pn_dc(i) == -conv_dc(i, 6)/baseMW_dc];
-            elseif conv_dc(i,4) == 2 % dc v control
-                con_dc = [con_dc; vn2_dc(i) == conv_dc(i, 8)^2];
-            else % droop control 
-                con_dc = [con_dc; pn_dc(i) == (conv_dc(i, 24)-1/conv_dc(i, 23)*(.5+.5*vn2_dc(i)-conv_dc(i,25)))/baseMW_dc*(-1)];
+        if vscControl 
+            for i = 1:nconvs_dc   
+                % dc side control mode
+                if conv_dc(i, 4) == 1   % p control
+                    con_dc = [con_dc; pn_dc(i) == -conv_dc(i, 6)/baseMW_dc];
+                elseif conv_dc(i,4) == 2 % dc v control
+                    con_dc = [con_dc; vn2_dc(i) == conv_dc(i, 8)^2];
+                else % droop control 
+                    con_dc = [con_dc; pn_dc(i) == (conv_dc(i, 24)-1/conv_dc(i, 23)*(.5+.5*vn2_dc(i)-conv_dc(i,25)))/baseMW_dc*(-1)];
+                end
+        
+                % ac side control mode
+                if conv_dc(i,5) == 1   % q control
+                    con_dc = [con_dc; qs_dc(i) == -conv_dc(i, 7)/baseMW_dc];
+                else % ac v control
+                    con_dc = [con_dc; v2s_dc(i) == conv_dc(i,8)^2];
+                end
+        
+                % inverter or rectifier mode 
+                if convState_dc(i) == 0 % rectifier 
+                    con_dc = [con_dc; ps_dc(i)>=0; pn_dc(i)>=0; pc_dc(i)<=0];
+                else % inverter 
+                    con_dc = [con_dc; ps_dc(i)<=0; pn_dc(i)<=0; pc_dc(i)>=0];
+                end
             end
-    
-            % ac side control mode
-            if conv_dc(i,5) == 1   % q control
-                con_dc = [con_dc; qs_dc(i) == -conv_dc(i, 7)/baseMW_dc];
-            else % ac v control
-                con_dc = [con_dc; v2s_dc(i) == conv_dc(i,8)^2];
-            end
-    
-            % inverter or rectifier mode 
-            if convState_dc(i) == 0 % rectifier 
-                con_dc = [con_dc; ps_dc(i)>=0; pn_dc(i)>=0; pc_dc(i)<=0];
-            else % inverter 
-                con_dc = [con_dc; ps_dc(i)<=0; pn_dc(i)<=0; pc_dc(i)>=0];
-            end
-        end 
+        end
     
     end
     
@@ -609,7 +624,9 @@ function solve_opf(caseName_dc, caseName_ac)
                     qij_ac{ng}(:) == -(-BB_ac{ng}(:)) .* (diag_cc_ac_rep(:) - cc_ac{ng}(:)) + (-GG_ac{ng}(:)) .* ss_ac{ng}(:)];
     
                 % Symmetry 
-                [i_idx, j_idx] = find(~eye(nbuses));  
+                %[i_idx, j_idx] = find(~eye(nbuses));  
+                U           = triu(true(nbuses),1);          
+                [i_idx,j_idx] = find(U);  % i  <j
                 con_ac = [con_ac; 
                     cc_ac{ng}(sub2ind([nbuses, nbuses], i_idx, j_idx)) == cc_ac{ng}(sub2ind([nbuses, nbuses], j_idx, i_idx));
                     ss_ac{ng}(sub2ind([nbuses, nbuses], i_idx, j_idx)) + ss_ac{ng}(sub2ind([nbuses, nbuses], j_idx, i_idx)) == 0];
@@ -620,6 +637,7 @@ function solve_opf(caseName_dc, caseName_ac)
                     ss_ac{ng}(sub2ind([nbuses, nbuses], i_idx, j_idx)).^2 <= ...
                     cc_ac{ng}(sub2ind([nbuses, nbuses], i_idx, i_idx)) .* ...
                     cc_ac{ng}(sub2ind([nbuses, nbuses], j_idx, j_idx))];
+                      
                 con_ac = [con_ac; 
                     diag_cc_ac >= 0 
                     diag_cc_ac == vn2_ac{ng}]; 

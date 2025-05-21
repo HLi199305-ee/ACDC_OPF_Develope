@@ -44,14 +44,14 @@ To run this module, the following tools must be installed:
     cd ACDC_OPF/OPF_matlab
     ```
 
-2. Open MATLAB and add the project to your path:
+2. Open MATLAB and add all files to your path:
 
     ```matlab
     addpath(genpath(pwd));   
     savepath;
     ```
 
-3. Run the OPF model:
+3. Run `main.m` file:
 
     ```matlab
     solve_opf('mtdc3slack_a', ...   
@@ -61,3 +61,28 @@ To run this module, the following tools must be installed:
               'plotResult', true);
     ```
 
+## 🖨️  Expected Output
+
+1. You will see the printed [AC/DC OPF results](assets/opf_result.txt) on the terminal window :
+
+     ```txt
+    =================================================================================
+    |      AC Grids Bus Data                                                        |
+    =================================================================================
+     Area   Branch        Voltage            Generation                Load        
+     #      #       Mag [pu]  Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]   Qd [MVAr]
+    -----   -----   --------  ---------   --------  ---------   -------   ---------
+       1       1      1.048      0.000    100.966    119.890     0.000       0.000
+       1       2      1.100      0.000    150.474    299.987     0.000       0.000
+       1       3      1.045      0.000    104.361     96.882     0.000       0.000
+       1       4      1.011      0.000        -         -        0.000       0.000
+       1       5      1.000      0.000        -         -       90.000      30.000
+    
+    ...... (omitted here)
+
+2. You will see the plotted AC/DC OPF results like:
+
+  <p align="left">
+  <img src="assets\viz_MATLAB.png" alt="Logo" width="300">
+  </p>  
+    

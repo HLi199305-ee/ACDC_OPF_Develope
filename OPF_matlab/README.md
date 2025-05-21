@@ -83,6 +83,6 @@ To run this module, the following tools must be installed:
 2. You will see the plotted AC/DC OPF results like:
 
   <p align="left">
-  <img src="assets\viz_MATLAB.png" alt="Logo" width="300">
+  <img src="assets\viz_MATLAB.png" alt="Logo" width="450">
   </p>  
     

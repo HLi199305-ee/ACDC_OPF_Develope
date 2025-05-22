@@ -2,7 +2,11 @@ using JuMP, Gurobi
 using SparseArrays, LinearAlgebra
 using Printf
 
-function solve_opf( ac_name::String, dc_name::String)
+function solve_opf(dc_name::String, ac_name::String;
+    vscControl::Bool = true,
+    writeTxt::Bool = false,
+    plotResult::Bool = true)
+    
     """
     === setup_dc ===
 
@@ -62,7 +66,8 @@ function solve_opf( ac_name::String, dc_name::String)
                     aloss_dc::Vector{Float64},
                     bloss_dc::Vector{Float64},
                     closs_dc::Vector{Float64},
-                    convState_dc::Vector{Int64})
+                    convState_dc::Vector{Int64},
+                    vscControl::Bool)
         
         # --- Initialization (a totoal of 19 kinds of variables) ---
         lb_dc = Vector{Vector{Float64}}(undef, 19)
@@ -251,30 +256,32 @@ function solve_opf( ac_name::String, dc_name::String)
         # ------------------------------
         # If we hope control setpoints of VSC converter be optimized, 
         # the below constraints need to be removed
-        for i in 1:nconvs_dc
-            # dc side control
-            if conv_dc[i, 4] == 1 # dc p control
-                @constraint(model, pn_dc[i] == -conv_dc[i, 6] / baseMW_dc)
-            elseif conv_dc[i, 4] == 2 # dc voltage control
-                @constraint(model, vn2_dc[i] == conv_dc[i, 8]^2)
-            else # droop control
-                @constraint(model, pn_dc[i] == (conv_dc[i, 24] - 1 / conv_dc[i, 23] * (.5 + .5*vn_dc[i] - conv_dc[i, 25])) / baseMW * (-1))
-            end
-            # ac side control
-            if conv_dc[i, 5] == 1 # ac q control
-                @constraint(model, qs_dc[i] == -conv_dc[i, 7] / baseMW_dc)
-            else # ac voltage control
-                @constraint(model, v2s_dc[i] == conv_dc[i, 8] ^2)
-            end
-            # converter mode
-            if convState_dc[i] == 0 # rectifier mode
-                @constraint(model, ps_dc[i] >=0)
-                @constraint(model, pn_dc[i] >=0)
-                @constraint(model, pc_dc[i] <=0)
-            else # inverter mode
-                @constraint(model, ps_dc[i] <=0)
-                @constraint(model, pn_dc[i] <=0)
-                @constraint(model, pc_dc[i] >=0)
+        if vscControl
+            for i in 1:nconvs_dc
+                # dc side control
+                if conv_dc[i, 4] == 1 # dc p control
+                    @constraint(model, pn_dc[i] == -conv_dc[i, 6] / baseMW_dc)
+                elseif conv_dc[i, 4] == 2 # dc voltage control
+                    @constraint(model, vn2_dc[i] == conv_dc[i, 8]^2)
+                else # droop control
+                    @constraint(model, pn_dc[i] == (conv_dc[i, 24] - 1 / conv_dc[i, 23] * (.5 + .5*vn_dc[i] - conv_dc[i, 25])) / baseMW * (-1))
+                end
+                # ac side control
+                if conv_dc[i, 5] == 1 # ac q control
+                    @constraint(model, qs_dc[i] == -conv_dc[i, 7] / baseMW_dc)
+                else # ac voltage control
+                    @constraint(model, v2s_dc[i] == conv_dc[i, 8] ^2)
+                end
+                # converter mode
+                if convState_dc[i] == 0 # rectifier mode
+                    @constraint(model, ps_dc[i] >=0)
+                    @constraint(model, pn_dc[i] >=0)
+                    @constraint(model, pc_dc[i] <=0)
+                else # inverter mode
+                    @constraint(model, ps_dc[i] <=0)
+                    @constraint(model, pn_dc[i] <=0)
+                    @constraint(model, pc_dc[i] >=0)
+                end
             end
         end
 
@@ -690,7 +697,7 @@ function solve_opf( ac_name::String, dc_name::String)
 
         # Set up DC variables and constraints
         res_setup_dc = setup_dc(model, nbuses_dc, nconvs_dc, bus_dc, conv_dc, ybus_dc, pol_dc, baseMW_dc, 
-                            gtfc_dc, btfc_dc, aloss_dc, bloss_dc, closs_dc, convState_dc)
+                            gtfc_dc, btfc_dc, aloss_dc, bloss_dc, closs_dc, convState_dc, vscControl)
         # Unpack DC variables for further use
         vn2_dc       = res_setup_dc.var_dc.vn2_dc
         pn_dc        = res_setup_dc.var_dc.pn_dc
@@ -776,16 +783,18 @@ function solve_opf( ac_name::String, dc_name::String)
 
 
     # ============================ Print Results =============================
+    outfile = joinpath(pwd(), "opf_results.txt")
+    io = writeTxt ? open(outfile, "w") : stdout
 
     # ----------------------------
     # Print AC Grid Bus Data
     # ---------------------------- 
-    println("================================================================================")
-    println("|   AC Grid Bus Data                                                           |")
-    println("================================================================================")
-    println(" Area    Bus      Voltage             Generation                Load        ")
-    println(" #       #     Mag [pu] Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]  Qd [MVAr]")
-    println("-----   -----  --------  --------   --------  ---------   -------- ---------")
+    println(io, "================================================================================")
+    println(io, "|   AC Grid Bus Data                                                           |")
+    println(io, "================================================================================")
+    println(io, " Area    Bus      Voltage             Generation                Load        ")
+    println(io, " #       #     Mag [pu] Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]  Qd [MVAr]")
+    println(io, "-----   -----  --------  --------   --------  ---------   -------- ---------")
     for ng in 1:ngrids
         genidx = generator_ac[ng][:, 1]
         
@@ -794,12 +803,12 @@ function solve_opf( ac_name::String, dc_name::String)
             formatted_vm_ac = @sprintf("%.3f", sqrt(value(vn2_ac[ng][i])))
             formatted_va_ac = @sprintf("%.3f", value(0 / π * 180))
         
-            print(lpad(ng, 3), " ", lpad(i, 7, " "), " ", 
+            print(io, lpad(ng, 3), " ", lpad(i, 7, " "), " ", 
                     lpad(formatted_vm_ac, 10, " "),  
                     lpad(formatted_va_ac, 10, " "))
                 
             if i == recRef_ac[ng][]
-                print("*")
+                print(io, "*")
             end
         
             if i in genidx
@@ -808,43 +817,43 @@ function solve_opf( ac_name::String, dc_name::String)
                 formatted_qgen_ac = @sprintf("%.3f", value(qgen_ac[ng][findfirst(m .== i)[1], 1]) * baseMVA_ac)
                     
                 if i == recRef_ac[ng][]
-                    print( lpad(formatted_pgen_ac, 10, " "),
+                    print(io, lpad(formatted_pgen_ac, 10, " "),
                         lpad(formatted_qgen_ac, 11, " "))
                 else
-                    print(lpad(formatted_pgen_ac, 11, " "),
+                    print(io, lpad(formatted_pgen_ac, 11, " "),
                         lpad(formatted_qgen_ac, 11, " "))
                 end
                 
                 formatted_pd = @sprintf("%.3f", value(pd_ac[ng][i]) * baseMVA_ac)
                 formatted_qd = @sprintf("%.3f", value(qd_ac[ng][i]) * baseMVA_ac)
         
-                print(lpad(formatted_pd, 11, " "), lpad(formatted_qd, 10, " "))
+                print(io, lpad(formatted_pd, 11, " "), lpad(formatted_qd, 10, " "))
         
             else
                 formatted_pd = @sprintf("%.3f", value(pd_ac[ng][i]) * baseMVA_ac)
                 formatted_qd = @sprintf("%.3f", value(qd_ac[ng][i]) * baseMVA_ac)
-                print(" " * "        -           -")
-                print(lpad(formatted_pd, 11, " "), lpad(formatted_qd, 10, " "))
+                print(io, " " * "        -           -")
+                print(io, lpad(formatted_pd, 11, " "), lpad(formatted_qd, 10, " "))
             end
-            print("\n") 
+            print(io, "\n") 
         end
         
     end
         
     totalGenerationCost = objective_value(model)
-    println("-----   -----  --------  --------   --------  ---------   -------- ---------")
-    println(@sprintf("The total generation costs is ＄%.2f/MWh (€%.2f/MWh)", totalGenerationCost, totalGenerationCost / 1.08))
-    print("\n") 
+    println(io, "-----   -----  --------  --------   --------  ---------   -------- ---------")
+    println(io, @sprintf("The total generation costs is ＄%.2f/MWh (€%.2f/MWh)", totalGenerationCost, totalGenerationCost / 1.08))
+    print(io, "\n") 
 
     # ----------------------------
     # Print AC Grid Branch Data
     # ----------------------------
-    println("===========================================================================================")
-    println("|     AC Grids Branch Data                                                                |")
-    println("===========================================================================================")
-    println(" Area   Branch  From   To        From Branch Flow         To Branch Flow      Branch Loss")
-    println(" #      #       Bus#   Bus#    Pij [MW]   Qij [MVAr]    Pij [MW]   Qij [MVAr]  Pij_loss [MW]")
-    println(" ----   ------  -----  -----  ---------  ----------   ----------  ----------    --------")
+    println(io, "===========================================================================================")
+    println(io, "|     AC Grids Branch Data                                                                |")
+    println(io, "===========================================================================================")
+    println(io, " Area   Branch  From   To        From Branch Flow         To Branch Flow      Branch Loss")
+    println(io, " #      #       Bus#   Bus#    Pij [MW]   Qij [MVAr]    Pij [MW]   Qij [MVAr]  Pij_loss [MW]")
+    println(io, " ----   ------  -----  -----  ---------  ----------   ----------  ----------    --------")
 
         global totalACPowerLoss  = 0.0
 
@@ -858,7 +867,7 @@ function solve_opf( ac_name::String, dc_name::String)
             
                 global totalACPowerLoss += branch_loss
 
-            println(
+            println(io,
                 lpad(ng, 4), " ", 
                 lpad(i, 8), " ", 
                 lpad(fbus_ac[ng][i], 6), " ", 
@@ -872,19 +881,19 @@ function solve_opf( ac_name::String, dc_name::String)
             end
         end
 
-    println(" ----   ------  -----  -----  ---------  ----------   ----------  ----------    --------")
-    println("The total AC network losses is ", @sprintf("%.3f MW", totalACPowerLoss))
-    println()
+    println(io, " ----   ------  -----  -----  ---------  ----------   ----------  ----------    --------")
+    println(io, "The total AC network losses is ", @sprintf("%.3f MW", totalACPowerLoss))
+    println(io, " ")
         
     # ----------------------------
     # Print DC Grid Bus Data
     # ---------------------------- 
-    println("================================================================================")
-    println("|   MTDDC Bus Data                                                             |")
-    println("================================================================================")
-    println(" Bus   Bus    AC   DC Voltage   DC Power   PCC Bus Injection   Converter loss")
-    println(" DC #  AC #  Area   Vdc [pu]    Pdc [MW]   Ps [MW]  Qs [MVAr]  Conv_Ploss [MW]")
-    println("-----  ----  ----  ---------    --------   -------  --------    --------")
+    println(io, "================================================================================")
+    println(io, "|   MTDDC Bus Data                                                             |")
+    println(io, "================================================================================")
+    println(io, " Bus   Bus    AC   DC Voltage   DC Power   PCC Bus Injection   Converter loss")
+    println(io, " DC #  AC #  Area   Vdc [pu]    Pdc [MW]   Ps [MW]  Qs [MVAr]  Conv_Ploss [MW]")
+    println(io, "-----  ----  ----  ---------    --------   -------  --------    --------")
         
     for i in 1:nbuses_dc
         formatted_vn_dc = @sprintf("%.3f", sqrt(value(vn2_dc[i])))
@@ -893,7 +902,7 @@ function solve_opf( ac_name::String, dc_name::String)
         formatted_qs = @sprintf("%.3f", value(qs_dc[i]) * baseMW_dc)
         formatted_convPloss = @sprintf("%.3f", value(convPloss_dc[i]) * baseMW_dc)
         
-        println(
+        println(io, 
         lpad(i, 4), " ", 
         lpad(Int(conv_dc[i, 2]), 5), " ", 
         lpad(Int(conv_dc[i, 3]), 5), " ", 
@@ -905,36 +914,36 @@ function solve_opf( ac_name::String, dc_name::String)
         )
     end
         
-    println("-----  ----  ----  ---------    --------   -------  --------    --------")
+    println(io, "-----  ----  ----  ---------    --------   -------  --------    --------")
     println(@sprintf("The total converter losses is %.3f MW", sum(value.(convPloss_dc)) * baseMW_dc))
-    println("")
+    println(io, " ")
 
     # ----------------------------
     # Print DC Grid Branch Data
     # ---------------------------- 
-    println("================================================================================")
-    println("|     MTDC Branch Data                                                        |")
-    println("================================================================================")
-    println(" Branch  From   To     From Branch    To Branch      Branch Loss")
-    println(" #       Bus#   Bus#   Flow Pij [MW]  Flow Pij [MW]  Pij_loss [MW]")
-    println(" ------  -----  -----   ---------      ---------      --------")
+    println(io, "================================================================================")
+    println(io, "|     MTDC Branch Data                                                        |")
+    println(io, "================================================================================")
+    println(io, " Branch  From   To     From Branch    To Branch      Branch Loss")
+    println(io, " #       Bus#   Bus#   Flow Pij [MW]  Flow Pij [MW]  Pij_loss [MW]")
+    println(io, " ------  -----  -----   ---------      ---------      --------")
 
     for i in 1:nbranches_dc
         formatted_pij_fwd = @sprintf("%.3f", value(pij_dc[fbus_dc[i], tbus_dc[i]]) * baseMW_dc * pol_dc)
         formatted_pij_bwd = @sprintf("%.3f", value(pij_dc[tbus_dc[i], fbus_dc[i]]) * baseMW_dc * pol_dc)
         formatted_loss = @sprintf("%.3f", abs(value(pij_dc[fbus_dc[i], tbus_dc[i]] + pij_dc[tbus_dc[i], fbus_dc[i]]) * baseMW_dc) * pol_dc)
         
-        println(
-        lpad(i, 7), "  ",                  # Branch index
-        lpad(fbus_dc[i], 4), "  ",         # From bus
-        lpad(tbus_dc[i], 5), "  ",         # To bus
-        lpad(formatted_pij_fwd, 10), "  ", # From branch flow
-        lpad(formatted_pij_bwd, 13), "  ", # To branch flow
-        lpad(formatted_loss, 12)           # Branch loss
+        println(io,
+        lpad(i, 7), "  ",                  
+        lpad(fbus_dc[i], 4), "  ",         
+        lpad(tbus_dc[i], 5), "  ",        
+        lpad(formatted_pij_fwd, 10), "  ", 
+        lpad(formatted_pij_bwd, 13), "  ", 
+        lpad(formatted_loss, 12)          
         )
     end
 
-    println(" ------  -----  -----   ---------      ---------      --------")
+    println(io, " ------  -----  -----   ---------      ---------      --------")
             
     global totalDCPowerLoss = 0.0
 
@@ -942,16 +951,23 @@ function solve_opf( ac_name::String, dc_name::String)
         global totalDCPowerLoss += abs(value(pij_dc[fbus_dc[i], tbus_dc[i]]) * baseMW_dc + value(pij_dc[tbus_dc[i], fbus_dc[i]]) * baseMW_dc) * pol_dc
     end
 
-    println("The total DC network losses is $(@sprintf("%.3f", totalDCPowerLoss)) MW.")
-    println()
+    println(io, "The total DC network losses is $(@sprintf("%.3f", totalDCPowerLoss)) MW.")
+    println(io, " ")
     formatted_time = @sprintf("%.3fs", elapsed_time)
-    println("Excution time is ", formatted_time)
+    println(io, "Excution time is ", formatted_time)
+
+    if writeTxt
+        close(io)
+        @info "OPF results saved to $(outfile)"
+    end
 
     # ----------------------------
     # Visualize OPF Results
     # ---------------------------- 
-    viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac,
-            pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k,
-            pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc)
+    if plotResult
+        viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, gen_entire_ac,
+                pgen_ac_k, qgen_ac_k, baseMVA_ac, vn2_ac_k, vn2_dc_k, pij_ac_k, qij_ac_k,
+                pij_dc_k, ps_dc_k, qs_dc_k, baseMW_dc, pol_dc)
+    end
     
 end

@@ -10,6 +10,7 @@ Returns a NamedTuple with the following fields:
   - baseMVA_ac        : Int64. AC base MVA.
   - bus_entire_ac     : Matrix{Float64}. Complete bus data (filtered by voltage level).
   - branch_entire_ac  : Matrix{Float64}. Complete branch data (filtered by a branch flag).
+  - gen_entire_ac     : Matrix{Float64}. Complete generator data.
   - gencost_entire_ac : Matrix{Float64}. Complete generation cost data.
   - bus_ac            : Vector{Matrix{Float64}}. Bus data for each AC grid.
   - branch_ac         : Vector{Matrix{Float64}}. Branch data for each AC grid.
@@ -58,7 +59,7 @@ function params_ac(acgrid_name::String)::NamedTuple
     qd_ac        = Vector{Vector{Float64}}(undef, ngrids)
     nbuses_ac    = Vector{Int}(undef, ngrids)
     nbranches_ac = Vector{Int}(undef, ngrids)
-    ngens_ac       = Vector{Int}(undef, ngrids)
+    ngens_ac     = Vector{Int}(undef, ngrids)
 
 
     # AC network admittance components for each grid

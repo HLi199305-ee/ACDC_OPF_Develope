@@ -1,6 +1,3 @@
-using SparseArrays
-using LinearAlgebra
-
 function makeYbus(baseMVA, bus, branch)
 
     # constants
@@ -20,18 +17,18 @@ function makeYbus(baseMVA, bus, branch)
     #   | If |   | Yff  Yft |   | Vf |
     #   |    | = |          | * |    |
     #   | It |   | Ytf  Ytt |   | Vt |
-    stat = branch[:, BR_STATUS]  
-    Ys = stat ./ (branch[:, BR_R] .+ 1im * branch[:, BR_X])  
-    Bc = stat .* branch[:, BR_B]  
+    stat = branch[:, BR_STATUS]  # ones at in-service branches
+    Ys = stat ./ (branch[:, BR_R] .+ 1im * branch[:, BR_X])  # series admittance
+    Bc = stat .* branch[:, BR_B]  # line charging susceptance
 
     # calucate ratio
     tap = ones(nl)  # default tap ratio = 1
-    idx = findall(branch[:, TAP] .!= 0)  
-    tap[idx] .= branch[idx, TAP]  
+    idx = findall(branch[:, TAP] .!= 0)  # indices of non-zero tap ratios
+    tap[idx] .= branch[idx, TAP]  # assign non-zero tap ratios
    
-   # ensure branch[:, SHIFT] 
-   shifts = Float64.(branch[:, SHIFT])  
-   phase_shifts = 1im * π / 180 * shifts  
+   # ensure branch[:, SHIFT] is converted to Float64
+   shifts = Float64.(branch[:, SHIFT])  # convert to Float64 array
+   phase_shifts = 1im * π / 180 * shifts  # calculate phase shifts
    tap .= tap .* exp.(phase_shifts)
 
     # calculate addimtance matrix
@@ -48,7 +45,7 @@ function makeYbus(baseMVA, bus, branch)
     t = branch[:, T_BUS]  # list of "to" buses
 
     # build Yf and Yt 
-    i = vcat(1:nl, 1:nl) 
+    i = vcat(1:nl, 1:nl)  # double set of row indices
     Yf = sparse(i, vcat(f, t), vcat(Yff, Yft), nl, nb)
     Yt = sparse(i, vcat(f, t), vcat(Ytf, Ytt), nl, nb)
 

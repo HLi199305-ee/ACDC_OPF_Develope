@@ -10,6 +10,7 @@ include("makeYbus.jl")
 include("params_dc.jl")
 include("params_ac.jl")
 include("solve_opf.jl")
+include("viz_opf.jl")
 
 # Robust memory measurement function
 function get_peak_memory()
@@ -40,7 +41,7 @@ struct BenchmarkResult
 end
 
 # Test cases
-test_cases = ["ac14ac57", "ac57ac118", "ac9ac14"]
+test_cases = ["ac14ac57", "ac57ac118", "ac9ac14", "ac118ac300"]
 dc_case = "mtdc3slack_a"
 
 # Store results
@@ -55,7 +56,7 @@ println("  Samples: 5\n")
 # Warm-up phase (3 runs)
 println("Performing warm-up runs...")
 for i in 1:3
-    solve_opf(test_cases[1], dc_case)
+    solve_opf(dc_case, test_cases[1], plotResult = false)
     GC.gc() # Force garbage collection
 end
 
@@ -72,7 +73,7 @@ for case in test_cases
         
         # Time the actual execution
         t = @elapsed begin
-            solve_opf(case, dc_case)
+            solve_opf(dc_case, test_cases[1], plotResult = false)
         end
         
         mem_after = get_peak_memory()

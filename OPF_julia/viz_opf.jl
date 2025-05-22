@@ -4,11 +4,12 @@ using Random
 using GLMakie
 using ColorSchemes, Colors
 import GLMakie as G
+#using CairoMakie
 
 # ---------------------------------------------------------------- #
 function find_row_index(rowVec::AbstractVector, M::AbstractMatrix)
-    for i in 1:size(M, 1)
-        if all(M[i, :] .== rowVec)
+    for (i, row) in enumerate(eachrow(M))   
+        if row == rowVec                    
             return i
         end
     end
@@ -63,10 +64,17 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   mappingMatrix_ac = hcat(oldBusNums_ac, busAreas_ac)
   branchAreas_ac = branch_entire_ac[:, end]
   
-  newFrom = [ newBusNums_ac[find_row_index([branch_entire_ac[i, 1], branchAreas_ac[i]], mappingMatrix_ac)]
-              for i in 1:size(branch_entire_ac, 1) ]
-  newTo = [ newBusNums_ac[find_row_index([branch_entire_ac[i, 2], branchAreas_ac[i]], mappingMatrix_ac)]
-            for i in 1:size(branch_entire_ac, 1) ]
+  newFrom = [
+    newBusNums_ac[
+        find_row_index([branch_entire_ac[i, 1], branchAreas_ac[i]], mappingMatrix_ac)
+        ] for i in axes(branch_entire_ac, 1)
+    ]
+
+    newTo = [
+    newBusNums_ac[
+        find_row_index([branch_entire_ac[i, 2], branchAreas_ac[i]], mappingMatrix_ac)
+        ] for i in axes(branch_entire_ac, 1)
+    ]
   
   branch_entire_ac_new = copy(branch_entire_ac)
   branch_entire_ac_new[:, 1] .= newFrom
@@ -87,21 +95,24 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   conv_dc_new[:, 1] .= conv_dc[:, 1] .+ numBuses_ac
   mappingMatrix = hcat(bus_entire_ac[:, 1], bus_entire_ac_new[:, 1], bus_entire_ac[:, end])
   conv_new_col = Vector{eltype(bus_entire_ac_new)}(undef, size(conv_dc, 1))
-  for i in 1:size(conv_dc, 1)
-      rowVec = conv_dc[i, 2:3]  
-      idx = find_row_index(rowVec, mappingMatrix[:, [1, 3]])
-      conv_new_col[i] = mappingMatrix[idx, 2]
+  
+  for (i, row) in enumerate(eachrow(conv_dc)) 
+        rowVec = row[2:3]                
+        idx    = find_row_index(rowVec, mappingMatrix[:, [1, 3]])
+        conv_new_col[i] = mappingMatrix[idx, 2]
   end
   conv_dc_new[:, 2] .= conv_new_col
 
   ########## 4. Reorder Generator Data ##########
   mappingMatrix = hcat(bus_entire_ac[:, 1], bus_entire_ac_new[:, 1], bus_entire_ac[:, end])
   gen_new_col = similar(gen_entire_ac[:, 1])
-  for i in 1:size(gen_entire_ac, 1)
-      rowVec = gen_entire_ac[i, [1, end]]
-      idx = find_row_index(rowVec, mappingMatrix[:, [1, 3]])
-      gen_new_col[i] = mappingMatrix[idx, 2]
+
+  for (i, row) in enumerate(eachrow(gen_entire_ac))
+        rowVec = row[[1, end]]                   # 对行视图直接切片
+        idx    = find_row_index(rowVec, mappingMatrix[:, [1, 3]])
+        gen_new_col[i] = mappingMatrix[idx, 2]
   end
+
   gen_entire_ac_new = copy(gen_entire_ac)
   gen_entire_ac_new[:, 1] .= gen_new_col
 
@@ -109,13 +120,15 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   gen_entire_ac_new[:, 3] .= vcat(qgen_ac_k...) .* baseMVA_ac
 
   ########## 5. Construct Network Graph ##########
-  # Define fromNode and toNode 
+  # Combine branch "from" and "to" nodes for AC, DC and converter branches
   fromNode = vcat(branch_entire_ac_new[:, 1],
                   branch_dc_new[:, 1],
                   conv_dc_new[:, 1])
   toNode = vcat(branch_entire_ac_new[:, 2],
                 branch_dc_new[:, 2],
                 conv_dc_new[:, 2])
+  
+  # Construct node list: AC bus numbers followed by DC bus numbers
   allNodes = vcat(bus_entire_ac_new[:, 1], bus_dc_new[:, 1])
   numNodes_total = length(allNodes)
   acNodes = bus_entire_ac_new[:, 1]
@@ -129,7 +142,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
       add_edge!(gNet, node2Index[f], node2Index[t])
   end
 
-  # Add Node Voltage Text
+  # Edit Node Voltage Text
   voltMag_ac = sqrt.(reshape(vcat(vn2_ac_k...), :, 1))
   voltMag_dc = sqrt.(vn2_dc_k)
   voltVal = Vector{Float64}(undef, numNodes_total)
@@ -173,7 +186,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
       tNode = e.dst
       x1, y1 = xy[fNode]
       x2, y2 = xy[tNode]
-      
+
       # Determine branch type and power flow on branches
       isACEdge = any(row -> (row[1] == fNode && row[2] == tNode) || (row[2] == fNode && row[1] == tNode), eachrow(acBranches))
       isDCEdge = any(row -> (row[1] == fNode && row[2] == tNode) || (row[2] == fNode && row[1] == tNode), eachrow(dcBranches))
@@ -214,50 +227,52 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   end
 
   cb = Colorbar(fig[1,2], colormap=ColorSchemes.Oranges, limits=(minEdgePower, maxEdgePower),
-                label = "MVA(MW)", width = 30, height = Relative(0.8))
+                label = "Branch Power/MVA(MW)", width = 30, height = Relative(0.8))
   
-  # Define node markers and sizes
+  # Edit Node Markers regarding Power
+  genActivePower = reshape(vcat(pgen_ac_k...), :, 1) * baseMVA_ac
+  genReactivePower = reshape(vcat(qgen_ac_k...), :, 1) * baseMVA_ac
   for (i, (x, y)) in xy
       if i in acNodes
           if i in genNodes
               idx_ac = findfirst(x -> x == i, bus_entire_ac_new[:, 1])
               loadPower = sqrt(bus_entire_ac_new[idx_ac, 3]^2 + bus_entire_ac_new[idx_ac, 4]^2)
               idx_gen = findfirst(x -> x == i, gen_entire_ac_new[:, 1])
-              genPower = sqrt(gen_entire_ac_new[idx_gen, 2]^2 + gen_entire_ac_new[idx_gen, 3]^2)
+              genPower = sqrt(genActivePower[idx_gen, 1]^2 + genReactivePower[idx_gen, 1]^2)
               if loadPower >= genPower   # draw load first then generator
-                  powerSize = 1e-3 + loadPower * 0.2
+                  powerSize = 1e-3 + loadPower * 0.11
                   G.scatter!(ax, [x], [y]; color=:red, markersize=powerSize)
-                  powerSize = 1e-3 + genPower * 0.2
+                  powerSize = 1e-3 + genPower * 0.11
                   G.scatter!(ax, [x], [y]; color=:green, markersize=powerSize) 
               else                      # draw generator first then load
-                  powerSize = 1e-3 + genPower * 0.2
+                  powerSize = 1e-3 + genPower * 0.11
                   G.scatter!(ax, [x], [y]; color=:green, markersize=powerSize)
-                  powerSize = 1e-3 + loadPower * 0.2
+                  powerSize = 1e-3 + loadPower * 0.11
                   G.scatter!(ax, [x], [y]; color=:red, markersize=powerSize)
               end
           else
               idx_ac = findfirst(x -> x == i, bus_entire_ac_new[:, 1])
               loadPower = sqrt(bus_entire_ac_new[idx_ac, 3]^2 + bus_entire_ac_new[idx_ac, 4]^2)
-              powerSize = 1e-3 + loadPower * 0.2
+              powerSize = 1e-3 + loadPower * 0.11
               G.scatter!(ax, [x], [y]; color=:red, markersize=powerSize)
           end
       else 
-          G.scatter!(ax, [x], [y]; color=:gray, marker=:utriangle, markersize=16)
+          G.scatter!(ax, [x], [y]; color=:blue, marker=:utriangle, markersize=16)
       end
   end
   
-  # Add node ID and voltage text
+  # Add Node Annotations (Node ID and Voltage)
   for (i, (x, y)) in xy
       if i in acNodes
           row = findfirst(x -> x == i, bus_entire_ac_new[:, 1])
           id = bus_entire_ac[row, 1]
           G.text!(ax, "# $(Int(id))", position=(x, y), align=(:center, :center), color=:black, fontsize=12)
-          G.text!(ax, voltStr[i] * " p.u.", position=(x+0.02, y+0.02), color=RGB(0.647, 0.649, 0.647), fontsize=11)
+          G.text!(ax, voltStr[i] * " p.u.", position=(x+0.02, y+0.02), color=RGB(0.5, 0.6, 0.6), fontsize=11)
       elseif i in dcNodes
           row = findfirst(x -> x == i, bus_dc_new[:, 1])
           id = bus_dc[row, 1]
           G.text!(ax, "# $(Int(id))", position=(x, y), align=(:center, :center), color=:black, fontsize=12)
-          G.text!(ax, voltStr[i] * " p.u.", position=(x+0.02, y+0.02), color=RGB(0.647, 0.649, 0.647), fontsize=11)
+          G.text!(ax, voltStr[i] * " p.u.", position=(x+0.02, y+0.02), color=RGB(0.5, 0.6, 0.6), fontsize=11)
       end   
   end
   
@@ -267,16 +282,20 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   legendACGen  = G.scatter!(ax, [-9999.0], [-9999.0];
       color=:green, marker=:circle, markersize=15, label="AC Generators")
   legendDCNode = G.scatter!(ax, [-9999.0], [-9999.0];
-      color=:gray, marker=:utriangle, markersize=16, label="DC Nodes")
+      color=:blue, marker=:utriangle, markersize=16, label="VSC Converters")
   legendBranch = G.lines!(ax, [-9999.0, -9999.0], [-9999.0, -9999.0];
       color=:brown, linewidth=2, label="Branch Lines")
   
   G.axislegend(ax; position = :rb)
   G.xlims!(ax, -1.5, 1.5)
   G.ylims!(ax, -1.5, 1.5)
-  
+
+  save("viz_julia.png", fig) # using GLMakie
+  # save("viz_julia.svg", fig) # using CairoMakie
+
   return fig
 end
+
 
 
 

@@ -43,13 +43,14 @@ function create_ac(case_name::String)
     end
 
     # Load each CSV file
-    read_csv(file) = Matrix(DataFrame(CSV.File(joinpath(base_path, file); header=false)))
-    baseMVA = read_csv("$(case_name)_baseMVA_ac.csv")
+    read_csv_matrix(file) = Matrix(DataFrame(CSV.File(joinpath(base_path, file); header=false)))
+    baseMVA = read_csv_matrix("$(case_name)_baseMVA_ac.csv")
     ac["baseMVA"] = baseMVA[1, 1]
-    ac["bus"]      = read_csv("$(case_name)_bus_ac.csv")
-    ac["branch"]   = read_csv("$(case_name)_branch_ac.csv")
-    ac["generator"] = read_csv("$(case_name)_gen_ac.csv")
-    ac["gencost"]  = read_csv("$(case_name)_gencost_ac.csv")
+    ac["bus"]      = read_csv_matrix("$(case_name)_bus_ac.csv")
+    ac["branch"]   = read_csv_matrix("$(case_name)_branch_ac.csv")
+    ac["generator"] = read_csv_matrix("$(case_name)_gen_ac.csv")
+    ac["gencost"]  = read_csv_matrix("$(case_name)_gencost_ac.csv")
 
     return ac
 end
+

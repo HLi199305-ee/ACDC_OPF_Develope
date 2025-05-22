@@ -14,20 +14,20 @@ function save_csv(mpc_merged, folder_direct)
         mkdir(folder_direct);
     end
 
-    MVA_file = fullfile(folder_direct, [prefix '_MVA.csv']);
-    bus_file = fullfile(folder_direct, [prefix '_bus.csv']);
-    gen_file = fullfile(folder_direct, [prefix '_gen.csv']);
-    branch_file = fullfile(folder_direct, [prefix '_branch.csv']);
-    gencost_file = fullfile(folder_direct, [prefix '_gencost.csv']);
+    baseMVA_file = fullfile(folder_direct, [prefix '_baseMVA_ac.csv']);
+    bus_file = fullfile(folder_direct, [prefix '_bus_ac.csv']);
+    gen_file = fullfile(folder_direct, [prefix '_gen_ac.csv']);
+    branch_file = fullfile(folder_direct, [prefix '_branch_ac.csv']);
+    gencost_file = fullfile(folder_direct, [prefix '_gencost_ac.csv']);
 
-    writematrix(mpc_merged.baseMVA, MVA_file);
+    writematrix(mpc_merged.baseMVA, baseMVA_file);
     writematrix(mpc_merged.bus, bus_file);
     writematrix(mpc_merged.gen, gen_file);
     writematrix(mpc_merged.branch, branch_file);
     writematrix(mpc_merged.gencost, gencost_file);
    
     fprintf('Merged AC grid data has already been saved to:\n');
-    fprintf('  %s\n', MVA_file);
+    fprintf('  %s\n', baseMVA_file);
     fprintf('  %s\n', bus_file);
     fprintf('  %s\n', gen_file);
     fprintf('  %s\n', branch_file);

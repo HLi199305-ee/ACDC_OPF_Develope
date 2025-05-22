@@ -2,7 +2,7 @@ function merged_ac = mpc_merged(varargin)
 
     %% Purpose: merge multiple ac grids from matower mpc files
     %% Input: names of mpc files from MATPOWER data sources
-    %% Output: merged mpc file used for acdcopf
+    %% Output: merged mpc file
 
     %% Initialization
     if ischar(varargin{1}) || isstring(varargin{1})

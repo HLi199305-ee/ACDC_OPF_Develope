@@ -109,9 +109,9 @@ def viz_opf(
     gen_entire_ac_new[:, 1] = np.concatenate(pgen_ac_k) * baseMVA_ac
     gen_entire_ac_new[:, 2] = np.concatenate(qgen_ac_k) * baseMVA_ac
 
-    
+
     # -------------------------------
-    # Edit AC Node
+    # Define Node
     # -------------------------------
     nodeNums = np.concatenate((bus_entire_ac_new[:, 0], bus_dc_new[:, 0]))
     numNodes = numBuses_ac + numBuses_dc 
@@ -120,7 +120,7 @@ def viz_opf(
     genNodes = gen_entire_ac_new[:, 0]
     
     # -------------------------------
-    # Construct Network Graphy
+    # Construct Network Graph
     # -------------------------------
     fromNode = np.concatenate((branch_entire_ac_new[:, 0],
                               branch_dc_new[:, 0],
@@ -163,9 +163,9 @@ def viz_opf(
             labels = { node: str(node) for node in pos.keys() }
             if idx in genNodes:
                 idx_ac = np.where(bus_entire_ac_new[:, 0] == idx)[0]
-                loadPower = np.sqrt(bus_entire_ac_new[idx_ac-1, 2]**2 + bus_entire_ac_new[idx_ac-1, 3]**2)
+                loadPower = np.sqrt(bus_entire_ac_new[idx_ac, 2]**2 + bus_entire_ac_new[idx_ac, 3]**2)
                 idx_gen = np.where(gen_entire_ac_new[:, 0] == idx)[0]
-                genPower = np.sqrt(gen_entire_ac_new[idx_gen-1, 1]**2 + gen_entire_ac_new[idx_gen-1, 2]**2)
+                genPower = np.sqrt(gen_entire_ac_new[idx_gen, 1]**2 + gen_entire_ac_new[idx_gen, 2]**2)
                 if loadPower >= genPower:
                     loadSize = 1e-3 + loadPower * factor
                     nx.draw_networkx_nodes(G, pos, nodelist=[idx], node_color='red', node_size=loadSize, ax=ax)
@@ -178,7 +178,7 @@ def viz_opf(
                     nx.draw_networkx_nodes(G, pos, nodelist=[idx], node_color='red', node_size=loadSize, ax=ax)
             else:
                 idx_ac = np.where(bus_entire_ac_new[:, 0] == idx)[0]
-                loadPower = np.sqrt(bus_entire_ac_new[idx_ac-1, 2]**2 + bus_entire_ac_new[idx_ac-1, 3]**2)
+                loadPower = np.sqrt(bus_entire_ac_new[idx_ac, 2]**2 + bus_entire_ac_new[idx_ac, 3]**2)
                 loadSize = 1e-3 + loadPower * factor
                 nx.draw_networkx_nodes(G, pos, nodelist=[idx], node_color='red', node_size=loadSize, ax=ax)
         else:
@@ -194,7 +194,7 @@ def viz_opf(
             row = np.where(bus_entire_ac_new[:, 0] == idx)[0]
             if row.size > 0:
                 orderStr = f"#{int(bus_entire_ac[row[0], 0])}"
-                voltStr = f"{voltMag_ac[row[0], 0]:.2f} p.u."
+                voltStr = f"{voltMag_ac[row[0], 0]:.3f} p.u."
             orderLabels[idx] = orderStr
             voltLabels[idx] = voltStr
 
@@ -202,11 +202,11 @@ def viz_opf(
             row = np.where(bus_dc_new[:, 0] == idx)[0]
             if row.size > 0:
                 orderStr = f"#{int(bus_entire_ac[row[0], 0])}"
-                voltStr = f"{voltMag_dc[row[0]]:.2f} p.u. "
+                voltStr = f"{voltMag_dc[row[0]]:.3f} p.u. "
             orderLabels[idx] = orderStr
             voltLabels[idx] = voltStr
 
-    nx.draw_networkx_labels(G, pos, labels=orderLabels, font_size=10, font_color='gray', 
+    nx.draw_networkx_labels(G, pos, labels=orderLabels, font_size=10, font_color='brown', 
                             horizontalalignment='center', verticalalignment='top', ax=ax)
     
     nx.draw_networkx_labels(G, pos, labels=voltLabels, font_size=10, font_color='purple', 
@@ -261,10 +261,11 @@ def viz_opf(
 
         nx.draw_networkx_edges(G, pos, ax=ax, width=1, edge_color=edge_colors)
 
+
     sm = cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])  
     cbar = plt.colorbar(sm, ax=ax)
-    cbar.set_label("Branch Power MVA(MW)", rotation=90, labelpad=15)
+    cbar.set_label("Branch Power/MVA(MW)", rotation=90, labelpad=15)
 
     # -------------------------------
     # Add Legend
@@ -291,7 +292,7 @@ def viz_opf(
                     markerfacecolor='blue',
                     markeredgecolor='blue',
                     markersize=10,
-                    label='DC Buses')
+                    label='VSC Converters')
 
     branchLines = Line2D([], [],
                         color='orange',

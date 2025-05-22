@@ -6,7 +6,10 @@
 #  [3]  Matacdc1.0 unser's manual, https://www.esat.kuleuven.be/electa/teaching/matacdc/MatACDCManual
 
 from opf_acdc import solve_opf
-result_opf = solve_opf("ac14ac57", "mtdc3slack_a")
+result_opf = solve_opf("mtdc3slack_a", "ac9ac14", 
+                       vscControl=True,
+                       writeTxt=False,
+                       plotResult=False)
 
 
 

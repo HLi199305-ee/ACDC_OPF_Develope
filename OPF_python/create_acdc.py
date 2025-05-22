@@ -49,9 +49,9 @@ def create_dc(case_name: str) -> Dict[str, Any]:
     dc: Dict[str, Any] = {
         "baseMW": float(pd.read_csv(required_files[0], header=None).iloc[0, 0]),
         "pol": int(pd.read_csv(required_files[1], header=None).iloc[0, 0]),
-        "bus": pd.read_csv(required_files[2], header=None).values.tolist(),
-        "branch": pd.read_csv(required_files[3], header=None).values.tolist(),
-        "converter": pd.read_csv(required_files[4], header=None).values.tolist()
+        "bus": pd.read_csv(required_files[2], header=None).to_numpy(),
+        "branch": pd.read_csv(required_files[3], header=None).to_numpy(),
+        "converter": pd.read_csv(required_files[4], header=None).to_numpy()
     }
     return dc
 
@@ -94,9 +94,9 @@ def create_ac(case_name: str) -> Dict[str, Any]:
     # Load each CSV file
     ac: Dict[str, Any] = {
         "baseMVA": float(pd.read_csv(required_files[0], header=None).iloc[0, 0]),
-        "bus": pd.read_csv(required_files[1], header=None).values.tolist(),
-        "branch": pd.read_csv(required_files[2], header=None).values.tolist(),
-        "generator": pd.read_csv(required_files[3], header=None).values.tolist(),
-        "gencost": pd.read_csv(required_files[4], header=None).values.tolist()
+        "bus": pd.read_csv(required_files[1], header=None).to_numpy(),
+        "branch": pd.read_csv(required_files[2], header=None).to_numpy(),
+        "generator": pd.read_csv(required_files[3], header=None).to_numpy(),
+        "gencost": pd.read_csv(required_files[4], header=None).to_numpy()
     }
     return ac

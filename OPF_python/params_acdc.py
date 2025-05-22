@@ -155,26 +155,27 @@ def params_ac(acgrid_name: str) -> dict:
     specified case.
 
     Returns: A dictionary `ac` with the following keys:
-        - network_ac        : dict. AC network containing all network data.
-        - ngrids            : scalar (int64). Number of AC grids.
-        - baseMVA_ac        : ndarray (float64). AC base MVA.
-        - bus_entire_ac     : ndarray (float64). Complete bus data (filtered by voltage level).
-        - branch_entire_ac  : ndarray (float64). Complete branch data (filtered by a branch flag).
-        - gencost_entire_ac : ndarray (float64). Complete generation cost data.
-        - bus_ac            : list[ndarray (float64)]. Bus data for each AC grid.
-        - branch_ac         : list[ndarray (float64)]. Branch data for each AC grid.
-        - generator_ac      : list[ndarray (float64)]. Generator data for each AC grid.
-        - gencost_ac        : list[ndarray (float64)]. Generator cost for each AC grid.
-        - recRef_ac         : list[list [int64]]. Recording the reference bus for each AC grid.
-        - pd_ac             : list[ndarray (float64)]. Active/reactive loads (per unit).
-        - qd_ac             : list[ndarray (float64)]. Mapping AC bus IDs to connected DC converters.
-        - nbuses_ac         : list[int64]. Number of buses for each AC grid.
-        - nbranches_ac      : list[int64]. Number of branches for each AC grid.
-        - ngens_ac          : list[int64]. Number of generators for each AC grid.
-        - GG_ac, BB_ac      : list[ndarray (float64)]. Real and Imaginary parts of the AC admittance matrix (per unit).
-        - GG_ft_ac, BB_ft_ac: list[ndarray (float64)]. Branch off-diagonal entries (from-to) (per unit).
-        - GG_tf_ac, BB_tf_ac: list[ndarray (float64)]. Branch off-diagonal entries (to-from) (per unit).
-        - fbus_ac, tbus_ac  : list[ndarray (int64)]. "From" and "to” bus indices per grid.
+        - network_ac            : dict. AC network containing all network data.
+        - ngrids                : scalar (int64). Number of AC grids.
+        - baseMVA_ac            : ndarray (float64). AC base MVA.
+        - bus_entire_ac         : ndarray (float64). Complete bus data.
+        - branch_entire_ac      : ndarray (float64). Complete branch data.
+        - generator_entire_ac   : ndarray (float64). Complete generator data.
+        - gencost_entire_ac     : ndarray (float64). Complete generation cost data.
+        - bus_ac                : list[ndarray (float64)]. Bus data for each AC grid.
+        - branch_ac             : list[ndarray (float64)]. Branch data for each AC grid.
+        - generator_ac          : list[ndarray (float64)]. Generator data for each AC grid.
+        - gencost_ac            : list[ndarray (float64)]. Generator cost for each AC grid.
+        - recRef_ac             : list[ndarry [int64]]. Recording the reference bus for each AC grid.
+        - pd_ac                 : list[ndarray (float64)]. Active/reactive loads (per unit).
+        - qd_ac                 : list[ndarray (float64)]. Mapping AC bus IDs to connected DC converters.
+        - nbuses_ac             : list[int64]. Number of buses for each AC grid.
+        - nbranches_ac          : list[int64]. Number of branches for each AC grid.
+        - ngens_ac              : list[int64]. Number of generators for each AC grid.
+        - GG_ac, BB_ac          : list[ndarray (float64)]. Real and Imaginary parts of the AC admittance matrix (per unit).
+        - GG_ft_ac, BB_ft_ac    : list[ndarray (float64)]. Branch off-diagonal entries (from-to) (per unit).
+        - GG_tf_ac, BB_tf_ac    : list[ndarray (float64)]. Branch off-diagonal entries (to-from) (per unit).
+        - fbus_ac, tbus_ac      : list[ndarray (int64)]. "From" and "to” bus indices per grid.
 
     See also: create_ac.py, makeYbus.py
     """
@@ -270,6 +271,7 @@ def params_ac(acgrid_name: str) -> dict:
         "baseMVA_ac": baseMVA_ac,
         "bus_entire_ac": bus_entire_ac,
         "branch_entire_ac": branch_entire_ac,
+        "generator_entire_ac": generator_entire_ac,
         "gencost_entire_ac": gencost_entire_ac,
         "ngrids": ngrids,
         "bus_ac": bus_ac,

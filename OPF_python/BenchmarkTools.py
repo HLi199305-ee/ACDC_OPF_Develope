@@ -17,7 +17,7 @@ def benchmark_power_flow(ac_cases, dc_case):
 
     print("Performing warm-up runs...")
     for _ in range(3):
-        solve_opf(ac_cases[0], dc_case)  # Warm-up with (acgrid_name, dcgrid_name)
+        solve_opf(dc_case, ac_cases[0], plotResult=False)  # Warm-up with (acgrid_name, dcgrid_name)
 
     results = []
 
@@ -27,19 +27,12 @@ def benchmark_power_flow(ac_cases, dc_case):
         mem_usages = []
 
         for i in range(5):
-            # Check for DC file
-            expected_file = f"{dc_case}_baseMW_dc.csv"
-            if not os.path.exists(expected_file):
-                print(f"Skipping: Missing required file: {expected_file}")
-                times.append(0.0)
-                mem_usages.append(0.0)
-                continue
-
+   
             mem_before = get_memory_mb()
             start = time.time()
 
             try:
-                solve_opf(ac_case, dc_case)  # Call with (acgrid_name, dcgrid_name)
+                solve_opf(dc_case, ac_case, plotResult=False)  # Call with (acgrid_name, dcgrid_name)
             except Exception as e:
                 print("Exception during optimization:", e)
                 continue
@@ -93,7 +86,7 @@ def save_results_csv(results, filename='benchmark_python.csv'):
 # === usage ===
 if __name__ == "__main__":
     dc_case = "mtdc3slack_a"
-    ac_cases = ["ac14ac57", "ac57ac118", "ac9ac14"]
+    ac_cases = ["ac9ac14", "14ac57", "ac57ac118", "ac118ac300"]
 
     results = benchmark_power_flow(ac_cases, dc_case)
     print_results_table(results)

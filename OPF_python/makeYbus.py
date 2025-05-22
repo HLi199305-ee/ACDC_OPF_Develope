@@ -55,3 +55,4 @@ def makeYbus(baseMVA, bus, branch):
     ) + csr_matrix((Ysh, (np.arange(nb), np.arange(nb))), shape=(nb, nb))
 
     return Ybus
+

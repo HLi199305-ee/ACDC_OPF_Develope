@@ -1,22 +1,113 @@
 <p align="left">
-  <img src="OPF_julia.png" alt="Logo" width="350">
+  <img src="assets\OPF_julia.png" alt="Logo" width="500">
 </p>   
 
-## AC/DC Optimal Power Flow in Julia
+# ⚡ Julia Implementation of AC/DC OPF
 
-⚠️ **Current Status:** This is an **early-stage Version 0.1, Still building and waiting for uploading** ... more features coming soon! 🚀 
+This folder contains the Julia-based implementation of the AC/DC OPF model using JuMP optimization framework and the Gurobi solver.
 
-📦 **Required Julia Packages**
+> **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features is ongoing !
 
-| **Package**        | **Version**  | **Description**                                      |
-|-------------------|------------|--------------------------------------------------|
-| 📄 **JuMP.jl**    | `1.23`      | Mathematical optimization modeling               |
-| 📄 **Gurobi.jl**  | `1.0.0`     | Gurobi solver interface (requires license)      |
-| 📄 **CSV.jl**     | `0.10.15`   | Reading/writing CSV files                        |
-| 📄 **DataFrames.jl** | `1.7.0`  | Handling tabular data in Julia                  |
+---
 
-To install them, run:
+## 📁 File Overview
 
-```julia
-using Pkg
-Pkg.add(["JuMP", "Gurobi", "CSV", "DataFrames"])
+| File | Description |
+|------|-------------|
+| `main.jl` | Main script to run AC/DC OPF. |
+| `create_ac.jl` | Parses the interconnected AC network data: bus, branch, generator information, etc. |
+| `create_dc.jl` | Parses the MTDC network data: DC buses, DC branches, converters. |
+| `params_ac.jl` | Extracts AC-side parameters used for AC/DC OPF. |
+| `params_dc.jl` | Extracts DC-side parameters used fro AC/DC OPF. |
+| `solve_opf.jl` | Constructs and solves the AC/DC OPF model using YALMIP and Gurobi. |
+| `viz_opf.jl` | Visualizes optimization results: topology, power flows. |
+| `makeYbus.jl` | Computes nodal addmitance matrix. |
+| `benchmarkTools.jl` | Tests computation performance in cases. |
+
+---
+
+## 🔧 Dependencies
+
+To run this project, the following tools must be installed:
+
+- [JuMP.jl](https://jump.dev/JuMP.jl/stable/): Optimization modeling framework.
+- [CSV.jl](https://github.com/JuliaData/CSV.jl): Reading and writing `.csv` data files. 
+- [DataFrames.jl](https://dataframes.juliadata.org/stable/): Tabular data manipulation and processing.
+- [Gurobi.jl](https://github.com/jump-dev/Gurobi.jl): Interface to the Gurobi solver (license required).
+- [Graphs.jl](https://juliagraphs.org/Graphs.jl/stable/): Graph data structures for representing power network topology.
+- [GraphPlot.jl](https://github.com/JuliaGraphs/GraphPlot.jl): Visualization tool for network layouts.
+- [GLMakie.jl](https://docs.makie.org/v0.22/explanations/backends/glmakie) Tool for interactive plotting. 
+- [ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl) Color maps for consistent and aesthetic plots. 
+- [Colors.jl](https://github.com/JuliaGraphics/Colors.jl) Color operations and definitions.
+
+---
+
+## 🚀 Getting Started
+
+1. Clone the repository and navigate to the `OPF_julia` folder:
+
+    ```bash
+    git clone https://github.com/CRESYM/ACDC_OPF.git
+    cd ACDC_OPF/OPF_julia
+    ```
+
+2. Open Julia, then enter **Pkg** mode by pressing `]` key. The prompot wll change to:
+
+    ```julia
+    (@v1.10) pkg>
+    ```
+
+3. Run following commands one by one:
+
+    ```julia
+    add JuMP
+    add CSV
+    add DataFrames
+    add Gurobi
+    add Graphs
+    add GraphPlot
+    add GLMakie
+    add ColorSchemes
+    add Colors
+    ```
+4. Open `OPF_julia` file and run `main_jl`:
+   
+    ```julia
+    include("create_ac.jl") 
+    include("create_dc.jl") 
+    include("makeYbus.jl") 
+    include("params_dc.jl") 
+    include("params_ac.jl") 
+    include("solve_opf.jl") 
+    include("viz_opf.jl") 
+
+    result_opf = solve_opf("mtdc3slack_a", "ac9ac14",
+                    vscControl = true,
+                    writeTxt = false,
+                    plotResult = true)
+    ```
+
+## 🖨️  Expected Output
+
+1. You will see the printed [AC/DC OPF results](assets/opf_result.txt) on the terminal window :
+
+     ```txt
+    =================================================================================
+    |      AC Grids Bus Data                                                        |
+    =================================================================================
+     Area   Branch        Voltage            Generation                Load        
+     #      #       Mag [pu]  Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]   Qd [MVAr]
+    -----   -----   --------  ---------   --------  ---------   -------   ---------
+       1       1      1.048      0.000    100.966    119.890     0.000       0.000
+       1       2      1.100      0.000    150.474    299.987     0.000       0.000
+       1       3      1.045      0.000    104.361     96.882     0.000       0.000
+       1       4      1.011      0.000        -         -        0.000       0.000
+       1       5      1.000      0.000        -         -       90.000      30.000
+    
+    ...... (omitted here)
+
+2. You will see the plotted AC/DC OPF results like:
+
+  <p align="left">
+  <img src="assets\viz_Julia.png" alt="Logo" width="480">
+  </p>  

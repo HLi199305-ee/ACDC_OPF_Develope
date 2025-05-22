@@ -70,7 +70,7 @@ To run this project, the following tools must be installed:
     add ColorSchemes
     add Colors
     ```
-4. Open `OPF_julia` file and run `main_jl`:
+4. Open `OPF_julia` file and run `main.jl`:
    
     ```julia
     include("create_ac.jl") 

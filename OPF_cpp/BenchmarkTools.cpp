@@ -1,4 +1,4 @@
-﻿#include "benchmarktools.h"
+﻿#include"benchmarkTools.h"
 #include "solve_opf.h"
 
 #include <iostream>
@@ -10,6 +10,7 @@
 #include <thread>
 #include <vector>
 #include <string>
+#include<sstream>
 
 //Fix for std::max conflict on Windows
 #ifdef _WIN32
@@ -54,7 +55,10 @@ void run_benchmark(const std::vector<std::string>& test_cases, const std::string
 
     std::cout << "Performing warm-up runs...\n";
     for (int i = 0; i < 3; ++i) {
-        solve_opf(dc_case, test_cases[0]);  // Warm-up using first test case
+        solve_opf(dc_case, test_cases[0],
+            /*vscControl*/ true,
+            /*writeTxt  */ false,
+            /*plotResult*/ false);  // Warm-up using first test case
     }
 
     for (const auto& ac_case : test_cases) {
@@ -67,7 +71,7 @@ void run_benchmark(const std::vector<std::string>& test_cases, const std::string
 
             try {
                 // Fix: Check for a file based only on the dc_case, not including the ac_case
-                std::string expected_file = dc_case + "_baseMW_dc.csv"; 
+                std::string expected_file = dc_case + "_baseMW_dc.csv";
                 std::ifstream check(expected_file);
                 if (!check.good()) {
                     std::cerr << "Skipping run: Missing required file: " << expected_file << "\n";
@@ -76,7 +80,10 @@ void run_benchmark(const std::vector<std::string>& test_cases, const std::string
                     continue;
                 }
 
-                solve_opf(dc_case, ac_case);  
+                solve_opf(dc_case, test_cases[0],
+                    /*vscControl*/ true,
+                    /*writeTxt  */ false,
+                    /*plotResult*/ false);  
             }
             catch (...) {
                 std::cerr << "Exception during optimization\n";

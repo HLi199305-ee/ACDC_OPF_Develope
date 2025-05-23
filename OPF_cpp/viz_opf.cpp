@@ -262,26 +262,26 @@ void viz_opf(const OPFVisualData& d) {
             y_dc.push_back(ys[i]);
         }
 
-        std::vector<double> loadPower(xs.size(), 0), genPower(xs.size(), 0);
+
+        Eigen::ArrayXd loadMag = (bus_entire_ac_new.col(2).array().square()
+            + bus_entire_ac_new.col(3).array().square()).sqrt();
+        Eigen::VectorXd loadPower = Eigen::VectorXd::Zero(xs.size());
         for (size_t k = 0; k < idx_ac.size(); ++k) {
-            size_t idx = idx_ac[k];
-            double Pd = bus_entire_ac_new(idx, 2);
-            double Qd = bus_entire_ac_new(idx, 3);
-            loadPower[idx] = std::hypot(Pd, Qd);
+            loadPower(idx_ac[k]) = loadMag(idx_ac[k]);
         }
 
+        Eigen::ArrayXd genMag = (gen_ac_entire_new.col(1).array().square()
+            + gen_ac_entire_new.col(2).array().square()).sqrt();
+        Eigen::VectorXd genPower = Eigen::VectorXd::Zero(xs.size());
         for (int i = 0; i < gen_ac_entire_new.rows(); ++i) {
             size_t idx = static_cast<size_t>(gen_ac_entire_new(i, 0) - 1);
-            double Pg = gen_ac_entire_new(i, 1);
-            double Qg = gen_ac_entire_new(i, 2);
-            genPower[idx] = std::hypot(Pg, Qg);
+            genPower(idx) = genMag(i);          
         }
 
 
-
-        /*
-       Edit node label
-       */
+      /**************************************************
+      * EDIT NOADL VOLT MAGNITITUDE
+      **************************************************/
 
         std::vector<int> orig_idx_ac(numBuses_ac);
         for (int i = 0; i < numBuses_ac; ++i) {
@@ -336,85 +336,94 @@ void viz_opf(const OPFVisualData& d) {
         }
 
 
-        /*
-        Edit branch
-        */
+      /**************************************************
+      * EDIT EDGE POWER
+      **************************************************/
+        
         Eigen::MatrixXd acBranches = branch_entire_ac_new.block(0, 0, branch_entire_ac_new.rows(), 2);
         Eigen::MatrixXd dcBranches = branch_dc_new.block(0, 0, branch_dc_new.rows(), 2);
         Eigen::MatrixXd convBranches = conv_dc_new.block(0, 0, conv_dc_new.rows(), 2);
 
-        std::unordered_set<int> acNodeSet;
-        acNodeSet.reserve(acNodes.size());
-        for (int i = 0; i < acNodes.size(); ++i) {
-            acNodeSet.insert(acNodes(i));
-        }
+        Eigen::Array<bool, Eigen::Dynamic, 1> acNodeSet(numNodes);
+        acNodeSet.setConstant(false);
+        for (int i = 0; i < acNodes.size(); ++i)
+            acNodeSet(acNodes(i) - 1) = true;    
 
-        std::unordered_set<int> dcNodeSet;
-        dcNodeSet.reserve(dcNodes.size());
-        for (int i = 0; i < dcNodes.size(); ++i) {
-            dcNodeSet.insert(dcNodes(i));
-        }
+        Eigen::Array<bool, Eigen::Dynamic, 1> dcNodeSet(numNodes);
+        dcNodeSet.setConstant(false);
+        for (int i = 0; i < dcNodes.size(); ++i)
+            dcNodeSet(dcNodes(i) - 1) = true;
 
-        std::vector<double> edgePower(edges.size(), 0.0);
+        Eigen::VectorXd edgePower = Eigen::VectorXd::Zero(edges.size());
 
         for (size_t k = 0; k < edges.size(); ++k) {
             auto [u, v] = edges[k];
-            int bus_u = static_cast<int>(u) + 1;
+            int bus_u = static_cast<int>(u) + 1;        
             int bus_v = static_cast<int>(v) + 1;
 
-            // 1) AC¡úAC
-            if (acNodeSet.count(bus_u) && acNodeSet.count(bus_v)) {
+            // 1. ac branches
+            if (acNodeSet(bus_u - 1) && acNodeSet(bus_v - 1)) {
                 for (int row = 0; row < branch_entire_ac_new.rows(); ++row) {
                     int i_val = static_cast<int>(branch_entire_ac_new(row, 0));
                     int j_val = static_cast<int>(branch_entire_ac_new(row, 1));
 
-                    if ((i_val == bus_u && j_val == bus_v) || (i_val == bus_v && j_val == bus_u)) {
+                    if ((i_val == bus_u && j_val == bus_v) ||
+                        (i_val == bus_v && j_val == bus_u)) {
                         int i = static_cast<int>(d.branch_entire_ac(row, 0));
                         int j = static_cast<int>(d.branch_entire_ac(row, 1));
-                        int ng = static_cast<int>(d.branch_entire_ac(row, d.branch_entire_ac.cols() - 1));
+                        int ng = static_cast<int>(d.branch_entire_ac(row,
+                            d.branch_entire_ac.cols() - 1));
 
                         double P = d.pij_ac_k[ng - 1](i - 1, j - 1);
                         double Q = d.qij_ac_k[ng - 1](i - 1, j - 1);
-                        edgePower[k] = std::hypot(P, Q) * d.baseMVA_ac;
+                        edgePower(k) = std::hypot(P, Q) * d.baseMVA_ac;   
                         break;
                     }
                 }
             }
-            // 2) DC¡úDC
-            else if (dcNodeSet.count(bus_u) && dcNodeSet.count(bus_v)) {
+
+            // 2. dc branches
+            else if (dcNodeSet(bus_u - 1) && dcNodeSet(bus_v - 1)) {
                 for (int row = 0; row < branch_dc_new.rows(); ++row) {
                     int f_val = static_cast<int>(branch_dc_new(row, 0));
                     int h_val = static_cast<int>(branch_dc_new(row, 1));
 
-                    if ((f_val == bus_u && h_val == bus_v) || (f_val == bus_v && h_val == bus_u)) {
+                    if ((f_val == bus_u && h_val == bus_v) ||
+                        (f_val == bus_v && h_val == bus_u)) {
                         int f = static_cast<int>(d.branch_dc(row, 0));
                         int h = static_cast<int>(d.branch_dc(row, 1));
-                        double Pdc = d.pij_dc_k(f - 1, h - 1) * d.baseMW_dc * d.pol_dc;
-                        edgePower[k] = std::abs(Pdc);
+                        double Pdc = d.pij_dc_k(f - 1, h - 1)
+                            * d.baseMW_dc * d.pol_dc;
+                        edgePower(k) = std::abs(Pdc);                     
                         break;
                     }
                 }
             }
-            // 3) Converter ±ß
+
+            // 3. converter branches
             else {
                 for (int i = 0; i < d.nconvs_dc; ++i) {
                     int f = static_cast<int>(conv_dc_new(i, 0));
                     int t = static_cast<int>(conv_dc_new(i, 1));
-                    if ((f == bus_u && t == bus_v) || (f == bus_v && t == bus_u)) {
+                    if ((f == bus_u && t == bus_v) ||
+                        (f == bus_v && t == bus_u)) {
                         double Ps = d.ps_dc_k[i] * d.baseMW_dc;
                         double Qs = d.qs_dc_k[i] * d.baseMW_dc;
-                        edgePower[k] = std::hypot(Ps, Qs);
+                        edgePower(k) = std::hypot(Ps, Qs);               
                         break;
                     }
                 }
             }
         }
 
-        auto minPower = *std::min_element(edgePower.begin(), edgePower.end());
-        auto maxPower = *std::max_element(edgePower.begin(), edgePower.end());
+        double minPower = edgePower.minCoeff();
+        double maxPower = edgePower.maxCoeff();
 
 
-        // ´ò¿ª Figure & Axes
+      /**************************************************
+      * SET FIGURE SIZE
+      **************************************************/
+        
         auto fig = figure(true);
         fig->size(1920 * 2, 1920);
         fig->color({ 1, 1, 1, 0 });
@@ -426,54 +435,54 @@ void viz_opf(const OPFVisualData& d) {
         ax_net->title("AC/DC OPF Results");
 
 
-        // »­±ß
+      /**************************************************
+      * SET EDGE COLOR
+      **************************************************/
+       
         bool first_edge = true;
         Eigen::MatrixXf edgeColors(edgePower.size(), 3);
 
-        for (size_t k = 0; k < edgePower.size(); ++k) {
-            float normVal = static_cast<float>(
-                (edgePower[k] - minPower) / (maxPower - minPower + 1e-6f));
-            auto rgb = oranges_colormap(normVal);  // std::array<float,3>
-            edgeColors(k, 0) = rgb[0];  // R
-            edgeColors(k, 1) = rgb[1];  // G
-            edgeColors(k, 2) = rgb[2];  // B
+        Eigen::ArrayXf normVals = ((edgePower.array() - minPower) /
+            (maxPower - minPower + 1e-6)).cast<float>();
+
+        for (size_t k = 0; k < normVals.size(); ++k) {
+            auto rgb = oranges_colormap(normVals(k));         
+            edgeColors.row(k) << rgb[0], rgb[1], rgb[2];
         }
 
         for (size_t k = 0; k < edges.size(); ++k) {
             auto [u, v] = edges[k];
-            std::vector<double> x = { xs[u], xs[v] };
-            std::vector<double> y = { ys[u], ys[v] };
+            std::vector<double> x{ xs[u], xs[v] };
+            std::vector<double> y{ ys[u], ys[v] };
 
-            std::array<float, 3> rgb = {
-                edgeColors(k, 0),
-                edgeColors(k, 1),
-                edgeColors(k, 2)
-            };
+            std::array<float, 3> rgb{
+                edgeColors(k, 0), edgeColors(k, 1), edgeColors(k, 2) }; 
 
             auto h = plot(x, y, "r-");
             h->color(rgb);
             h->line_width(3);
-            if (first_edge) {
-                h->display_name("Branch Lines");
-                first_edge = false;
-            }
-            else {
-                h->display_name("");
-            }
-
+            if (first_edge) { h->display_name("Branch Lines"); first_edge = false; }
+            else { h->display_name(""); }
         }
 
-        // »­½Úµã
+
+      /**************************************************
+      * SET NODE LOOK
+      **************************************************/
+
         bool first_gen = true;
         bool first_load = true;
         double factor = 0.22;
+
+        std::vector<double> xp(1), yp(1);
+
         for (size_t idx : idx_ac) {
             double loadSize = 1e-3 + loadPower[idx] * factor;
             double genSize = 1e-3 + genPower[idx] * factor;
             bool   hasGen = genPower[idx] > 0.0;
 
-            std::vector<double> xp{ xs[idx] };
-            std::vector<double> yp{ ys[idx] };
+            xp[0] = xs[idx];
+            yp[0] = ys[idx];
 
             if (hasGen) {
                 if (loadSize >= genSize) {
@@ -481,39 +490,26 @@ void viz_opf(const OPFVisualData& d) {
                     h1->marker_face(true);
                     h1->marker_color({ 0.9f, 0.01f, 0.01f });
                     h1->marker_face_color({ 0.9f, 0.01f, 0.01f });
-                    if (first_load) {
-                        h1->display_name("AC Loads");
-                        first_load = false;
-                    }
+                    if (first_load) { h1->display_name("AC Loads"); first_load = false; }
 
                     auto h2 = scatter(xp, yp, genSize);
                     h2->marker_face(true);
                     h2->marker_color({ 0.01f, 0.5f, 0.5f });
                     h2->marker_face_color({ 0.01f, 0.5f, 0.5f });
-                    h2->display_name("");
-                    if (first_gen) {
-                        h2->display_name("AC Generators");
-                        first_gen = false;
-                    }
+                    if (first_gen) { h2->display_name("AC Generators"); first_gen = false; }
                 }
                 else {
                     auto h3 = scatter(xp, yp, genSize);
                     h3->marker_face(true);
                     h3->marker_color({ 0.01f, 0.5f, 0.5f });
                     h3->marker_face_color({ 0.01f, 0.5f, 0.5f });
-                    if (first_gen) {
-                        h3->display_name("AC Generators");
-                        first_gen = false;
-                    }
+                    if (first_gen) { h3->display_name("AC Generators"); first_gen = false; }
 
                     auto h4 = scatter(xp, yp, loadSize);
                     h4->marker_face(true);
                     h4->marker_color({ 0.9f, 0.01f, 0.01f });
                     h4->marker_face_color({ 0.9f, 0.01f, 0.01f });
-                    if (first_load) {
-                        h4->display_name("AC Loads");
-                        first_load = false;
-                    }
+                    if (first_load) { h4->display_name("AC Loads"); first_load = false; }
                 }
             }
             else {
@@ -521,27 +517,23 @@ void viz_opf(const OPFVisualData& d) {
                 h5->marker_face(true);
                 h5->marker_color({ 0.9f, 0.01f, 0.01f });
                 h5->marker_face_color({ 0.9f, 0.01f, 0.01f });
-                h5->display_name("");
-                if (first_load) {
-                    h5->display_name("AC Loads");
-                    first_load = false;
-                }
+                if (first_load) { h5->display_name("AC Loads"); first_load = false; }
             }
         }
 
+   
         bool first_dc = true;
         auto h6 = scatter(x_dc, y_dc, 25);
         h6->marker_face(true);
         h6->marker_color({ 0.1f, 0.1f, 0.8f });
         h6->marker_face_color({ 0.1f, 0.1f, 0.8f });
         h6->marker_style(line_spec::marker_style::upward_pointing_triangle);
-        if (first_dc) {
-            h6->display_name("DC Node");
-            first_dc = false;
-        }
+        if (first_dc) { h6->display_name("DC Node"); first_dc = false; }
 
 
-        // Ìí¼Ó½Úµã±êÇ©
+      /**************************************************
+      * SET NODE LABEL, ORDER(#) AND VOLT (x.xx p.u.)
+      **************************************************/
         for (auto idx : idx_ac) {
             std::string acNodeLabel = std::string("#") + std::to_string(orig_idx_ac[idx]);
             text(xs[idx], ys[idx], acNodeLabel)
@@ -565,28 +557,24 @@ void viz_opf(const OPFVisualData& d) {
                 .font_size(8);
         }
 
-        // ÍøÂç»­Íêºó£¬¼ÇÂ¼ÊÓÍ¼ÏÞ½ç
+
+      /**************************************************
+      * ADD COLOR BAR ON LEFT-HAND SIDE
+      **************************************************/
         auto orig_x = ax_net->xlim();
         auto orig_y = ax_net->ylim();
 
-
-        // 1) °Ñ ax_net Ñ¹Õ­µ½×ó²à 0.05~0.80 ÇøÓò£¬ÎªÉ«ÌõÁô¿Õ¼ä
         ax_net->position({ 0.2f, 0.10f, 0.60f, 0.80f });
 
-        // -------------------------------------------------------------------------
-        // (4) ´´½¨Õ­Öá ax_bar ²¢ÓÃ image() »­Á¬Ðø½¥±äÉ«¿é --------------------------
-        // -------------------------------------------------------------------------
         auto ax_bar = fig->add_axes();
         ax_bar->position({ 0.10f, 0.10f, 0.04f, 0.80f });
         ax_bar->xticks({});
         ax_bar->box(false);
 
-        // ------ 1) ÑÕÉ«Ó³Éä±£³Ö²»±ä ------------------------------------------------
         std::vector<std::vector<double>> oranges_map;
         for (auto& c : oranges_colors) oranges_map.push_back({ c[0], c[1], c[2] });
         ax_bar->colormap(oranges_map);
 
-        // ---- 2. É«Ìõ±¾Éí --------------------------------------------------------
         constexpr int nseg = 200;
         vector_2d Z(nseg, vector_1d(2));
         for (int i = 0; i < nseg; ++i) {
@@ -594,36 +582,27 @@ void viz_opf(const OPFVisualData& d) {
             Z[i][0] = Z[i][1] = v;
         }
 
-        // Ô¤Áô×ó²à 25?% Öá¿í¸ø¿Ì¶È£»É«¿éÖ»»­ÓÒ²à 75?%
-        double gap = 0.25;                    // 0~gap ÓÃÀ´·Å¿Ì¶È
-        ax_bar->image(gap, 1.0,               // xmin, xmax
-            0.0, double(nseg - 1),  // ymin, ymax
+        double gap = 0.25;                  
+        ax_bar->image(gap, 1.0,          
+            0.0, double(nseg - 1),  
             Z, true);
 
         ax_bar->y_axis().reverse();
         ax_bar->ylim({ 0, nseg - 1 });
-        ax_bar->xlim({ 0, 1 });                 // 0~gap Ò²Òª¿É¼û
+        ax_bar->xlim({ 0, 1 });            
+
+        ax_bar->title("Branch Power/MVAï¼ˆMWï¼‰");
+        ax_bar->title_font_size_multiplier(1.1);   
+        ax_bar->title_visible(true);             
+        ax_bar->xlabel("");                    
 
 
-
-        // ¢Û ÔÚ¸üÓÒ²àÔÙÐ´Ò»¸öÊúÅÅ±êÌâ
-        //    Matplot++ ¾É°æ `text()` Ö§³Ö rotation(angle)£»angle=90 ¾ÍÊúÅÅ
-        ax_bar->title("Branch Power/MVA£¨MW£©");
-        ax_bar->title_font_size_multiplier(1.1);   // ×ÖÔÙ´óÒ»µã£¨¿ÉÑ¡£©
-        ax_bar->title_visible(true);               // Ò»°ãÄ¬ÈÏ¾ÍÊÇ true
-
-        /* Èç¹ûÏëÈÃ±êÌâ¸úÉ«Ìõ¾ÓÖÐ£¬°Ñ x?label È¥µôÒÔÃâÕ¼¿Õ¼ä */
-        ax_bar->xlabel("");                        // ±£Ö¤ÉÏ·½
-
-
-        // -------------------------------------------------------------------------
-        // (5) ÔÚ×îÓÒ²àÔÙ¿ªÒ»¸öÐ¡Öá£ºax_legend ------------------------------------
-        // -------------------------------------------------------------------------
+      /**************************************************
+      * ADD LEGEND ON RIGHT-HAND SIDE
+      **************************************************/
         auto ax_legend = fig->add_axes();
-        // ÈÃËüÓë ax_net ´¹Ö±¶ÔÆë£¬¸ß¶ÈÏàÍ¬£¬¿í¶È 0.10 (= 10%)
         ax_legend->position({ 0.82f, 0.30f, 0.12f, 0.45f });
 
-        // °Ñ×ø±êÖáÔªËØÈ«²¿¹Øµô
         ax_legend->box(true);
         ax_legend->xticks({});
         ax_legend->yticks({});
@@ -631,18 +610,14 @@ void viz_opf(const OPFVisualData& d) {
         ax_legend->ylim({ 0, 3 });
         ax_legend->hold(on);
 
-
-        // y ×ø±ê´ÓÉÏµ½ÏÂÅÅ 4 ÐÐ
         double y0 = 2.6;
         double dy = 0.8;
 
-        // ©¤©¤ 1) Branch Lines ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
         ax_legend->plot({ 0.05, 0.35 }, { y0, y0 }, "r-")->line_width(3);
         ax_legend->text(0.45, y0, "Branch Lines")
             ->font_size(10)
             .alignment(matplot::labels::alignment::left);
 
-        // ©¤©¤ 2) AC Loads (ºìÔ²) ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
         ax_legend->scatter({ 0.20 }, { y0 - dy }, 45)
             ->marker_face(true)
             .marker_color({ 0.85f,0.0f,0.0f })
@@ -651,7 +626,6 @@ void viz_opf(const OPFVisualData& d) {
             ->font_size(10)
             .alignment(matplot::labels::alignment::left);
 
-        // ©¤©¤ 3) AC Generators (ÂÌÔ²) ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
         ax_legend->scatter({ 0.20 }, { y0 - 2 * dy }, 45)
             ->marker_face(true)
             .marker_color({ 0.0f,0.6f,0.0f })
@@ -660,7 +634,6 @@ void viz_opf(const OPFVisualData& d) {
             ->font_size(10)
             .alignment(matplot::labels::alignment::left);
 
-        // ©¤©¤ 4) DC Nodes (À¶Èý½Ç) ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
         ax_legend->scatter({ 0.20 }, { y0 - 3 * dy }, 45)
             ->marker_face(true)
             .marker_style(matplot::line_spec::marker_style::upward_pointing_triangle)
@@ -670,12 +643,8 @@ void viz_opf(const OPFVisualData& d) {
             ->font_size(10)
             .alignment(matplot::labels::alignment::left);
 
-
-        // ×îºó»­Í¼
         ax_net->axis(matplot::equal);
-        // auto lgd = matplot::legend(ax_net, { "Branch Lines" , "Branch Lines" });
-        // lgd->location(legend::general_alignment::bottomright);
-        matplot::show();
 
+        matplot::show();
 
 }

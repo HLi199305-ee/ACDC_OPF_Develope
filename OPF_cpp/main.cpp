@@ -5,13 +5,16 @@
 // [2]  Mauro Escobar, https ://github.com/me2533/acopf
 // [3]  Matacdc1.0 unser's manual, https://www.esat.kuleuven.be/electa/teaching/matacdc/MatACDCManual
 
+#include "benchmarkTools.h"
 #include "solve_opf.h"
-#include "BenchmarkTools.h"
 
 int main() {
-    solve_opf("mtdc3slack_a", "ac14ac57");
+    solve_opf("mtdc3slack_a", "ac9ac14",
+        /*vscControl*/ true,
+        /*writeTxt  */ false,
+        /*plotResult*/ false);
     
-    std::vector<std::string> test_cases = { "ac14ac57", "ac57ac118", "ac9ac14" };
+    std::vector<std::string> test_cases = { "ac14ac57", "ac57ac118", "ac9ac14", "ac118ac300" };
     std::string dc_case = "mtdc3slack_a";
     std::vector<BenchmarkResult> results;
 

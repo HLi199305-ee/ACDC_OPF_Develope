@@ -19,7 +19,7 @@ This folder contains the Julia-based implementation of the AC/DC OPF model using
 | `create_dc.jl` | Parses the MTDC network data: DC buses, DC branches, converters. |
 | `params_ac.jl` | Extracts AC-side parameters used for AC/DC OPF. |
 | `params_dc.jl` | Extracts DC-side parameters used fro AC/DC OPF. |
-| `solve_opf.jl` | Constructs and solves the AC/DC OPF model using YALMIP and Gurobi. |
+| `solve_opf.jl` | Constructs and solves the AC/DC OPF model using JuMP and Gurobi. |
 | `viz_opf.jl` | Visualizes optimization results: topology, power flows. |
 | `makeYbus.jl` | Computes nodal addmitance matrix. |
 | `benchmarkTools.jl` | Tests computation performance in cases. |

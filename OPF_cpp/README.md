@@ -46,63 +46,133 @@ To run this project, the following tools must be installed:
     git clone https://github.com/YourUsername/ACDC_OPF.git
     cd ACDC_OPF/OPF_c++
     ```
-2. We recomend use [vcpkg](https://github.com/microsoft/vcpkg) manage C++ library. Download **vcpkg**:
+2. We recomend use [vcpkg](https://github.com/microsoft/vcpkg) manage C++ library. Download `vcpkg`:
    ```bash
    git clone https://github.com/microsoft/vcpkg.git
    cd vcpkg
    ./bootstrap-vcpkg.bat
    ```
-   Intergrate **vcpkg** with Visual Studio:
+   Intergrate`vcpkg` with Visual Studio:
    ```bash
    ./vcpkg integrate install
    ```
-3. Install  `Eign` and  `Matplot++` via  **vcpkg**. Open  `Powershell` or `CMD`, and navigate to  **vcpkg** direcotroy, like: 
+3. Install  `Eign` and  `Matplot++` via `vcpkg`. Open  `Powershell` or `CMD`, and navigate to  `vcpkg` direcotroy, like: 
 
     ```bash
    cd C:\XXX\vcpkg
    ```
 
-   In the root directory of **vcpkg**, type:
+   In the root directory of `vcpkg`, type:
 
    ```bash
    .\vcpkg install eigen3
    .\vcpkg install matplotplusplus
    ```
 
-   `Gurobi` is not in **vcpkg**, you must download [Gurobi](https://www.gurobi.com/downloads/) manually and install it follow a [Instruction](https://support.gurobi.com/hc/en-us/articles/4534161999889-How-do-I-install-Gurobi-Optimizer).
+   `Gurobi` is not in `vcpkg`, you must download [Gurobi](https://www.gurobi.com/downloads/) manually and install it follow a [Instruction](https://support.gurobi.com/hc/en-us/articles/4534161999889-How-do-I-install-Gurobi-Optimizer).
 
     ---
    
 
 ## 🧩 Gurobi Configuration in Visual Studio IDE
-   Next are details regarding Gurobi Configuration. Based on our local setup, the configruation is demostrated using  **Gurobi 9.5.2** and **Visual Studio 2022**.
+  
+   Below are details regarding Gurobi Configuration. Based on our local setup, the configruation is demostrated using  **Gurobi 9.5.2** and **Visual Studio 2022**.
 
-<p align="left">
+   👉 Firstly, you will find two folders `include` and `lib` inside your Gurobi installlation directory. 
+  
+  <p align="left">
   <img src="assets\gurobi_config_f1.png" alt="Logo" width="450">
-</p>  
+  </p>  
+
+  For example, if you installed `Gurobi` to `D:\gurobi952\win64`, then:
+  
+  - Header files are located at:  
+  `D:\gurobi952\win64\include`
+  <p align="left">
+    <img src="assets\gurobi_config_f2.png" alt="Logo" width="450">
+  </p> 
+
+  - Library files are located at:  
+  `D:\gurobi952\win64\lib`
+  <p align="left">
+    <img src="assets\gurobi_config_f3.png" alt="Logo" width="450">
+  </p> 
+
+👉 Then, set **External Include Directories**:
+
+Step1️⃣: right-click **【project】** ➡️ select **【Properties】** ➡️ go to **【VC++ Drectories】**
+ 
+Step2️⃣: select **【External Include Directories】** ➡️ add  `D:\gurobi952\win64\include` 
+
+Step3️⃣: click **【OK】**
+
+
+  <p align="left">
+    <img src="assets\gurobi_config_f4.jpg" alt="Logo" width="660">
+  </p> 
+
+ 👉 Next, set **Additional Liarbry Directories**:
+
+ Step1️⃣: right-click **【project】** ➡️ select **【Properties】** ➡️ go to **【Linker】** ➡️ select **【General】**
+ 
+ Step2️⃣: select **【Additional Liarbry Directories】** ➡️ add  `D:\gurobi952\win64\lib` 
+
+ Step3️⃣: click **【OK】**
 
 <p align="left">
-  <img src="assets\gurobi_config_f2.png" alt="Logo" width="450">
+  <img src="assets\gurobi_config_f5.jpg" alt="Logo" width="660">
+</p> 
+
+ 👉 Last, add **Additional Dpendencies**:
+
+ Step1️⃣: right-click **【project】** ➡️ select **【Properties】** ➡️ go to **【Linker】** ➡️ select **【Input】**
+ 
+ Step2️⃣: select **【Additional Dpendencies】** ➡️ add  `D:\gurobi952\win64\lib\gurobi95.lib` and `D:\gurobi952\win64\lib\gurobi_c++mdd2019.lib` 
+
+ Step3️⃣: click **【OK】**
+
+<p align="left">
+  <img src="assets\gurobi_config_f6.jpg" alt="Logo" width="660">
+</p> 
+
+✅ Configuration finished
+
+## 🧩 Matplot++ Configuration in Visual Studio IDE
+
+After installing `Matplot++`, you probabily still have problems running it succesufully. 
+
+👉 First,  `Matplot++` only use `C++17` or higher. In your Visual Studio, you need to go to **【Configuration Properties】** and then set:
+
+<p align="left">
+  <img src="assets\matplot++_f4.jpg" alt="Logo" width="660">
+</p> 
+
+👉 Then, you will still get a error report:
+   ```bash
+   Unhandled exception at 0x0007ffe9ececf19 in MatplotPlusPlus_text.exe:
+   Microsoft C++ exception: std: runtime_error at meory location 0x000000F632EFEC68.
+   ```
+This is becasue `Matplot++` relys on [gunplot](https://sourceforge.net/projects/gnuplot/) to achieve plot function. You need to download and install `gunplot`.
+<p align="left">
+  <img src="assets\matplot++_f3.png" alt="Logo" width="660">
+</p> 
+
+👉 After installing `gunplot`, add `gunplot.exe` file into `PATH` under `System Variables` :
+This is becasue `Matplot++` relys on [gunplot](https://sourceforge.net/projects/gnuplot/) to achieve plot function. You need to download and install `gunplot`.
+<p align="left">
+  <img src="assets\matplot++_f2.jpg" alt="Logo" width="350">
 </p> 
 
 <p align="left">
-  <img src="assets\gurobi_config_f3.png" alt="Logo" width="450">
+  <img src="assets\matplot++_f1.jpg" alt="Logo" width="350">
 </p> 
 
+👉 Last, add `gunplot` library path in Visual Studio:
 <p align="left">
-  <img src="assets\gurobi_config_f4.jpg" alt="Logo" width="800">
+  <img src="assets\matplot++_f5.jpg" alt="Logo" width="660">
 </p> 
 
-<p align="left">
-  <img src="assets\gurobi_config_f5.jpg" alt="Logo" width="800">
-</p> 
-
-<p align="left">
-  <img src="assets\gurobi_config_f6.jpg" alt="Logo" width="800">
-</p> 
-
-
-
+✅ Configuration finished
 
 ## 🖨️  Expected Output
 
@@ -128,4 +198,5 @@ To run this project, the following tools must be installed:
   <p align="left">
   <img src="assets\viz_C++.png" alt="Logo" width="700">
   </p>  
+
 

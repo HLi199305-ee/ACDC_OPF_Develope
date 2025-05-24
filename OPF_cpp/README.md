@@ -1,29 +1,76 @@
 <p align="left">
-  <img src="OPF_cpp.png" alt="Logo" width="350">
+  <img src="assets\OPF_cpp.png" alt="Logo" width="500">
 </p>   
 
-## AC/DC Optimal Power Flow in C++
+# ⚡ C++ Implementation of AC/DC OPF
 
-🚀 **Current Status:** This is an **early-stage Version 0.1, Still building and waiting for updating** ... more features coming soon! ⚡
+This folder contains the C++-based implementation of the AC/DC OPF model using Gurobi C++ API optimization framework and the Gurobi solver.
 
-📦 **Required C++ Libraries**
+> **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features is ongoing !
 
-| **Package** | **Version** | **Description**                                                  |
-|-------------|-------------|------------------------------------------------------------------|
-| **Eigen**   |  3.4.0      |  C++ library for linear algebra and numerical computations. |
-| **Gurobi**  |  9.5.2       | optimization solver (requires license). |
+---
 
-### Installing Eigen with vcpkg
-We recommend using [vcpkg](https://github.com/microsoft/vcpkg).
-1. **Install vcpkg**:
-   ```bash
-   git clone https://github.com/microsoft/vcpkg.git
-   cd vcpkg
-   .\bootstrap-vcpkg.bat  # on Windows
+## 📁 File Overview
 
-2. **Install Eigen**:
-   ```bash
-   ./vcpkg install eigen3
+| File | Description |
+|------|-------------|
+| `main.cpp` | Main script to run the AC/DC OPF. |
+| `create_ac.cpp / create_ac.h` | Load AC grid data from `.csv`. |
+| `create_dc.cpp / create_dc.h` | Load DC grid and VSC converter data from `.csv`. |
+| `params_ac.cpp / params_ac.h` | Extract parameters for AC-side modeling. |
+| `params_dc.cpp / params_dc.h` | Extract parameters for DC-side modeling. |
+| `csv_reader.cpp / csv_reader.h` | Read customed `.csv` files. |
+| `makeYbus.cpp / makeYbus.h` | Construct AC admittance matrix using bus/branch data. |
+| `solve_opf.cpp / solve_opf.h` | Core OPF formulation using Gurobi C++ API. |
+| `viz_opf.cpp / viz_opf.h` | Visualize AC/DC power flows. |
+| `benchmarkTools.cpp / benchmarkTools.h` | Tools to run performance tests across cases. |
+| `acmtdcpfvcx.sln` | Visual Studio solution file. |
 
-### Configure Gurobi in Microsoft Visual Studio
-Here you can find [guidance](https://support.gurobi.com/hc/en-us/articles/360013194392-How-do-I-configure-a-new-Gurobi-C-project-with-Microsoft-Visual-Studio).
+---
+
+## 🔧 Dependencies
+
+To run this project, the following tools must be installed:
+
+- [Gurobi C++ API](https://docs.gurobi.com/projects/optimizer/en/current/reference/cpp.html): C++ API for optimization (license required).
+- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page): C++ library for linear algebra.
+- [Matplot++](https://alandefreitas.github.io/matplotplusplus/): C++ plotting library.
+
+---
+
+## 🚀 Getting Started
+
+1. Clone the repository and navigate to the `OPF_c++` folder:
+
+    ```bash
+    git clone https://github.com/YourUsername/ACDC_OPF_C++.git
+    cd ACDC_OPF_C++
+    ```
+
+
+    ```
+
+## 🖨️  Expected Output
+
+1. You will see the printed [AC/DC OPF results](assets/opf_result.txt) on the terminal window :
+
+     ```txt
+    =================================================================================
+    |      AC Grids Bus Data                                                        |
+    =================================================================================
+     Area   Branch        Voltage            Generation                Load        
+     #      #       Mag [pu]  Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]   Qd [MVAr]
+    -----   -----   --------  ---------   --------  ---------   -------   ---------
+       1       1      1.048      0.000    100.966    119.890     0.000       0.000
+       1       2      1.100      0.000    150.474    299.987     0.000       0.000
+       1       3      1.045      0.000    104.361     96.882     0.000       0.000
+       1       4      1.011      0.000        -         -        0.000       0.000
+       1       5      1.000      0.000        -         -       90.000      30.000
+    
+    ...... (omitted here)
+
+2. You will see the plotted AC/DC OPF results like:
+
+  <p align="left">
+  <img src="assets\viz_C++.png" alt="Logo" width="600">
+  </p>  

@@ -158,7 +158,6 @@ This is becasue `Matplot++` relys on [gunplot](https://sourceforge.net/projects/
 </p> 
 
 👉 After installing `gunplot`, add `gunplot.exe` file into `PATH` under `System Variables` :
-This is becasue `Matplot++` relys on [gunplot](https://sourceforge.net/projects/gnuplot/) to achieve plot function. You need to download and install `gunplot`.
 <p align="left">
   <img src="assets\matplot++_f2.jpg" alt="Logo" width="350">
 </p> 

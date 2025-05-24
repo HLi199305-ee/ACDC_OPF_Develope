@@ -4,7 +4,7 @@
 
 # ⚡ Python Implementation of AC/DC OPF
 
-This folder contains the Python-based implementation of the AC/DC OPF model using Python optimization framework and the Gurobi solver.
+This folder contains the Python-based implementation of the AC/DC OPF model using Pyomo optimization framework and the Gurobi solver.
 
 > **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features is ongoing !
 
@@ -42,8 +42,8 @@ To run this project, the following tools must be installed:
 1. Clone the repository and navigate to the `OPF_python` folder:
 
     ```bash
-    git clone https://github.com/YourUsername/ACDC_OPF_Python.git
-    cd ACDC_OPF_Python
+    git clone https://github.com/YourUsername/ACDC_OPF.git
+    cd ACDC_OPF/OPF_python
     ```
 
 2. Install the required packages using either `pip` or `conda`:

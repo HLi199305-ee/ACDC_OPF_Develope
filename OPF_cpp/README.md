@@ -77,6 +77,30 @@ To run this project, the following tools must be installed:
 ## 🧩 Gurobi Configuration in Visual Studio IDE
    Next are details regarding Gurobi Configuration. Based on our local setup, the configruation is demostrated using  **Gurobi 9.5.2** and **Visual Studio 2022**.
 
+<p align="left">
+  <img src="assets\gurobi_config_f1.png" alt="Logo" width="450">
+</p>  
+
+<p align="left">
+  <img src="assets\gurobi_config_f2.png" alt="Logo" width="450">
+</p> 
+
+<p align="left">
+  <img src="assets\gurobi_config_f3.png" alt="Logo" width="450">
+</p> 
+
+<p align="left">
+  <img src="assets\gurobi_config_f4.jpg" alt="Logo" width="800">
+</p> 
+
+<p align="left">
+  <img src="assets\gurobi_config_f5.jpg" alt="Logo" width="800">
+</p> 
+
+<p align="left">
+  <img src="assets\gurobi_config_f6.jpg" alt="Logo" width="800">
+</p> 
+
 
 
 
@@ -104,3 +128,4 @@ To run this project, the following tools must be installed:
   <p align="left">
   <img src="assets\viz_C++.png" alt="Logo" width="700">
   </p>  
+

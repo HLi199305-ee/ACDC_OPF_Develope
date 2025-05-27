@@ -51,7 +51,7 @@ To run this project, the following tools must be installed:
     cd ACDC_OPF/OPF_julia
     ```
 
-2. Open Julia, then enter **Pkg** mode by pressing `]` key. The prompot wll change to:
+2. Open Julia, then enter `Pkg` mode by pressing `]` key. The prompot wll change to:
 
     ```julia
     (@v1.10) pkg>

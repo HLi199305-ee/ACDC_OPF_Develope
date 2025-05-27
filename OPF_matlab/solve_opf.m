@@ -75,12 +75,10 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     cputime = toc;
     
     %% 4. Extract Optimization Results (Convert to Numeric Values)
-    % For DC variables: call value() and unpack into numeric variables
     var_dc_k = cellfun(@value, var_dc, 'UniformOutput', false);
     [vn2_dc_k, pn_dc_k, ps_dc_k, qs_dc_k, pc_dc_k, qc_dc_k, v2s_dc_k, v2c_dc_k, Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k, ...
         Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k] = var_dc_k{:};
     
-    % For each AC grid: call value() on the variables and unpack
     var_ac_k = cell(ngrids, 1);
     for ng = 1:ngrids
         var_ac_k{ng} = cellfun(@value, var_ac{ng}, 'UniformOutput', false);
@@ -409,7 +407,6 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
         ub_dc{19} = ub_default;
         con_dc = [con_dc; lb_dc{19} <= convPloss_dc <= ub_dc{19}];
     
-        % Bundle DC variables into a cell array
         var_dc = {vn2_dc, pn_dc, ps_dc, qs_dc, pc_dc, qc_dc, v2s_dc, v2c_dc, Ic_dc, lc_dc, pij_dc, lij_dc, ...
             Ctt_dc, Ccc_dc, Ctc_dc, Stc_dc, Cct_dc, Sct_dc, convPloss_dc};
     
@@ -602,13 +599,11 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
             var_ac{ng} = {vn2_ac{ng}, pn_ac{ng}, qn_ac{ng}, pgen_ac{ng}, qgen_ac{ng}, pij_ac{ng}, qij_ac{ng}, ss_ac{ng}, cc_ac{ng}};
     
             % --- AC Power Flow Constraints (Second-Order Cone Relaxation) ---
-                % Extract diagonal elements of the relaxation variables and admittance matrices
                 diag_ss_ac = diag(ss_ac{ng});     
                 diag_cc_ac = diag(cc_ac{ng});        
                 diag_BB_ac = diag(BB_ac{ng});       
                 diag_GG_ac = diag(GG_ac{ng});   
     
-                % Create a replicated matrix of the diagonal of cc_ac for vectorized operations
                 diag_cc_ac_rep = repmat(diag_cc_ac, 1, nbuses);
     
                 % Nodal Power Injection Calculations 
@@ -737,10 +732,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
         
         % Define Generation cost function
         for ng = 1:ngrids
-            % Extract the generator participation factors for grid ng.
             actgen = generator_ac{ng}(:, 8);
-            
-            % Retrieve the cost model type for grid ng.
             costType = gencost_ac{ng}(1, 4);
             
             % Compute the cost contribution for grid ng based on the cost model.

@@ -196,7 +196,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
           r = findfirst(row -> (row[1] == fNode && row[2] == tNode) || (row[2] == fNode && row[1] == tNode), eachrow(acBranches))
           i_val = Int(branch_entire_ac[r, 1])
           j_val = Int(branch_entire_ac[r, 2])
-          ng = Int(branch_entire_ac[r, end])   # Ensure the last column contains the grid index
+          ng = Int(branch_entire_ac[r, end])  
           edgePower[edgeIndex] = sqrt(pij_ac_k[ng][i_val, j_val]^2 + qij_ac_k[ng][i_val, j_val]^2) * baseMVA_ac
       elseif isDCEdge
           r = findfirst(row -> (row[1] == fNode && row[2] == tNode) || (row[2] == fNode && row[1] == tNode), eachrow(dcBranches))
@@ -290,7 +290,7 @@ function viz_opf(bus_entire_ac, branch_entire_ac, bus_dc, branch_dc, conv_dc, ge
   G.xlims!(ax, -1.5, 1.5)
   G.ylims!(ax, -1.5, 1.5)
 
-  save("viz_julia.png", fig) # using GLMakie
+  # save("viz_julia.png", fig) # using GLMakie
   # save("viz_julia.svg", fig) # using CairoMakie
 
   return fig

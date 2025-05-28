@@ -3,9 +3,9 @@ using SparseArrays, LinearAlgebra
 using Printf
 
 function solve_opf(dc_name::String, ac_name::String;
-    vscControl::Bool = true,
-    writeTxt::Bool = false,
-    plotResult::Bool = true)
+    vscControl::Bool = true,    # enable vsc control constraint
+    writeTxt::Bool = false,     # enable text output of ac/dc opf
+    plotResult::Bool = true)    # enable plots output of ac/dc opf
     
     """
     === setup_dc ===

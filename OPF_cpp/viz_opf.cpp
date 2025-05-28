@@ -185,7 +185,7 @@ void viz_opf(const OPFVisualData& d) {
       * CONSTRUCT NETWORK GRAPH
       **************************************************/
        
-        // 1. build toNode
+        // 1. add toNode
         const int nFrom = numBranches_ac + numBranches_dc + numConvs;
         Eigen::VectorXi fromNode(nFrom);
         
@@ -193,7 +193,7 @@ void viz_opf(const OPFVisualData& d) {
         fromNode.segment(numBranches_ac, numBranches_dc) = branch_dc_new.col(0).cast<int>();
         fromNode.tail(numConvs) = conv_dc_new.col(0).cast<int>();
 
-        // 2. build toNode
+        // 2. add toNode
         auto nTo = nFrom;
         Eigen::VectorXi toNode(nTo);
 

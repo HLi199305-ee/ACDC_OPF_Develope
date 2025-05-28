@@ -13,9 +13,10 @@ from params_acdc import params_ac, params_dc
 from viz_opf import viz_opf
 
 def solve_opf(dcgrid_name: str, acgrid_name: str, *,
-            vscControl: bool = True,
-            writeTxt: bool = False,
-            plotResult: bool = True ):
+            vscControl: bool = True,    # enable vsc control constraint
+            writeTxt: bool = False,     # enable text output of ac/dc opf
+            plotResult: bool = True     # enable plots output of ac/dc opf
+            ):
     
     start = time.perf_counter()
     
@@ -520,7 +521,6 @@ def setup_dc(model:ConcreteModel,
     # ------------------------------
     # DC Power Flow Constraints (Second-Order Cone Relaxation)
     # ------------------------------
-    # Compute effective line impedance matrix zij_dc
     zij_dc = 1.0 / np.abs(ybus_dc.toarray())
     zij_dc = zij_dc - np.diag(np.diag(zij_dc))
     zij_dc[np.isinf(zij_dc)] = 1e4
@@ -910,7 +910,6 @@ def extract_vals_dc(
       v2s_dc_k, v2c_dc_k, Ic_dc_k, lc_dc_k, pij_dc_k, lij_dc_k,
       Ctt_dc_k, Ccc_dc_k, Ctc_dc_k, Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k
     """
-    # For scalar variables indexed by DC bus, or by converter, use list comprehensions.
     vn2_dc_k = np.array([value(model.vn2_dc[i]) for i in range(nbuses_dc)])
     pn_dc_k  = np.array([value(model.pn_dc[i]) for i in range(nbuses_dc)])
     ps_dc_k  = np.array([value(model.ps_dc[i]) for i in range(nconvs_dc)])
@@ -922,13 +921,11 @@ def extract_vals_dc(
     Ic_dc_k  = np.array([value(model.Ic_dc[i]) for i in range(nconvs_dc)])
     lc_dc_k  = np.array([value(model.lc_dc[i]) for i in range(nconvs_dc)])
     
-    # For 2D variables, iterate over both indices.
     pij_dc_k = np.array([[value(model.pij_dc[i, j]) for j in range(nbuses_dc)]
                            for i in range(nbuses_dc)])
     lij_dc_k = np.array([[value(model.lij_dc[i, j]) for j in range(nbuses_dc)]
                            for i in range(nbuses_dc)])
     
-    # For converter-side scalar variables
     Ctt_dc_k = np.array([value(model.Ctt_dc[i]) for i in range(nconvs_dc)])
     Ccc_dc_k = np.array([value(model.Ccc_dc[i]) for i in range(nconvs_dc)])
     Ctc_dc_k = np.array([value(model.Ctc_dc[i]) for i in range(nconvs_dc)])

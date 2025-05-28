@@ -1,6 +1,6 @@
 # 📝 Preparing AC/DC Grid Data
 
-The data required for AC/DC OPF includes are listed and shown blow, and all data are stored in .csv format
+The data required for AC/DC OPF is listed and shown below, and all data are stored in .csv format
 due to its compatibility with various coding language environments. Matpower provides various AC grid case files. 
 
 <img src="assets/F3.png" alt="示意图" width="300"/>

@@ -4,7 +4,7 @@
 
 # ⚡ C++ Implementation of AC/DC OPF
 
-This folder contains the C++-based implementation of the AC/DC OPF model using Gurobi C++ API optimization framework and the Gurobi solver.
+This folder contains the C++-based implementation of the AC/DC OPF model using the Gurobi C++ API optimization framework and the Gurobi solver.
 
 > **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features is ongoing !
 
@@ -19,7 +19,7 @@ This folder contains the C++-based implementation of the AC/DC OPF model using G
 | `create_dc.cpp / create_dc.h` | Load DC grid and VSC converter data from `.csv`. |
 | `params_ac.cpp / params_ac.h` | Extract parameters for AC-side modeling. |
 | `params_dc.cpp / params_dc.h` | Extract parameters for DC-side modeling. |
-| `csv_reader.cpp / csv_reader.h` | Read customed `.csv` files. |
+| `csv_reader.cpp / csv_reader.h` | Read custom `.csv` files. |
 | `makeYbus.cpp / makeYbus.h` | Construct AC admittance matrix using bus/branch data. |
 | `solve_opf.cpp / solve_opf.h` | Core OPF formulation using Gurobi C++ API. |
 | `viz_opf.cpp / viz_opf.h` | Visualize AC/DC power flows. |
@@ -46,7 +46,7 @@ To run this project, the following tools must be installed:
     git clone https://github.com/YourUsername/ACDC_OPF.git
     cd ACDC_OPF/OPF_c++
     ```
-2. We recomend use [vcpkg](https://github.com/microsoft/vcpkg) manage C++ library. Download `vcpkg`:
+2. We recomend using [vcpkg](https://github.com/microsoft/vcpkg) to manage C++ library. Download `vcpkg`:
    ```bash
    git clone https://github.com/microsoft/vcpkg.git
    cd vcpkg
@@ -56,7 +56,7 @@ To run this project, the following tools must be installed:
    ```bash
    ./vcpkg integrate install
    ```
-3. Install  `Eign` and  `Matplot++` via `vcpkg`. Open  `Powershell` or `CMD`, and navigate to  `vcpkg` direcotroy, like: 
+3. Install  `Eigen` and  `Matplot++` via `vcpkg`. Open  `Powershell` or `CMD`, and navigate to the  `vcpkg` directory, like: 
 
     ```bash
    cd C:\XXX\vcpkg
@@ -76,9 +76,9 @@ To run this project, the following tools must be installed:
 
 ## 🧩 Gurobi Configuration in Visual Studio IDE
   
-   Below are details regarding Gurobi Configuration. Based on our local setup, the configruation is demostrated using  **Gurobi 9.5.2** and **Visual Studio 2022**.
+   Below are details regarding the Gurobi Configuration. Based on our local setup, the configuration is demonstrated using **Gurobi 9.5.2** and **Visual Studio 2022**.
 
-   👉 Firstly, you will find two folders `include` and `lib` inside your Gurobi installlation directory. 
+   👉 Firstly, you will find two folders, `include` and `lib`, inside your Gurobi installation directory. 
   
   <p align="left">
   <img src="assets\gurobi_config_f1.png" alt="Logo" width="450">
@@ -139,7 +139,7 @@ Step3️⃣: click **【OK】**
 
 ## 🧩 Matplot++ Configuration in Visual Studio IDE
 
-After installing `Matplot++`, you probabily still have problems running it succesufully. 
+After installing `Matplot++`, you probably still have problems running it successfully. 
 
 👉 First,  `Matplot++` only use `C++17` or higher. In your Visual Studio, you need to go to **【Configuration Properties】** and then set:
 
@@ -147,17 +147,17 @@ After installing `Matplot++`, you probabily still have problems running it succe
   <img src="assets\matplot++_f4.jpg" alt="Logo" width="660">
 </p> 
 
-👉 Then, you will still get a error report:
+👉 Then, you will still get an error report:
    ```bash
    Unhandled exception at 0x0007ffe9ececf19 in MatplotPlusPlus_text.exe:
-   Microsoft C++ exception: std: runtime_error at meory location 0x000000F632EFEC68.
+   Microsoft C++ exception: std::runtime_error at memory location 0x000000F632EFEC68.
    ```
-This is becasue `Matplot++` relys on [gunplot](https://sourceforge.net/projects/gnuplot/) to achieve plot function. You need to download and install `gunplot`.
+This is because `Matplot++` relies on [gunplot](https://sourceforge.net/projects/gnuplot/) to achieve the plot function. You need to download and install `gunplot`.
 <p align="left">
   <img src="assets\matplot++_f3.png" alt="Logo" width="660">
 </p> 
 
-👉 After installing `gunplot`, add `gunplot.exe` file into `PATH` under `System Variables` :
+👉 After installing `gunplot`, add the `gunplot.exe` file into `PATH` under `System Variables` :
 <p align="left">
   <img src="assets\matplot++_f2.jpg" alt="Logo" width="350">
 </p> 

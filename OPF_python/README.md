@@ -4,7 +4,7 @@
 
 # ⚡ Python Implementation of AC/DC OPF
 
-This folder contains the Python-based implementation of the AC/DC OPF model using Pyomo optimization framework and the Gurobi solver.
+This folder contains the Python-based implementation of the AC/DC OPF model using the Pyomo optimization framework and the Gurobi solver.
 
 > **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features is ongoing !
 
@@ -57,7 +57,7 @@ To run this project, the following tools must be installed:
     conda install -c conda-forge pyomo pandas numpy matplotlib networkx
     ```
    
-3. Open `OPF_python` file and run `main.py`:
+3. Open the `OPF_python` file and run `main.py`:
    
     ```python
    from opf_acdc import solve_opf

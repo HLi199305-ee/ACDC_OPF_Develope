@@ -4,9 +4,9 @@
 
 # ⚡ Julia Implementation of AC/DC OPF
 
-This folder contains the Julia-based implementation of the AC/DC OPF model using JuMP optimization framework and the Gurobi solver.
+This folder contains the Julia-based implementation of the AC/DC OPF model using the JuMP optimization framework and the Gurobi solver.
 
-> **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features is ongoing !
+> **Current Status:** This is an **early-stage Version 0.1, Still building** ... more features are ongoing !
 
 ---
 
@@ -18,7 +18,7 @@ This folder contains the Julia-based implementation of the AC/DC OPF model using
 | `create_ac.jl` | Parses the interconnected AC network data: bus, branch, generator information, etc. |
 | `create_dc.jl` | Parses the MTDC network data: DC buses, DC branches, converters. |
 | `params_ac.jl` | Extracts AC-side parameters used for AC/DC OPF. |
-| `params_dc.jl` | Extracts DC-side parameters used fro AC/DC OPF. |
+| `params_dc.jl` | Extracts DC-side parameters used for AC/DC OPF. |
 | `solve_opf.jl` | Constructs and solves the AC/DC OPF model using JuMP and Gurobi. |
 | `viz_opf.jl` | Visualizes optimization results: topology, power flows. |
 | `makeYbus.jl` | Computes nodal addmitance matrix. |
@@ -51,13 +51,13 @@ To run this project, the following tools must be installed:
     cd ACDC_OPF/OPF_julia
     ```
 
-2. Open Julia, then enter `Pkg` mode by pressing `]` key. The prompot wll change to:
+2. Open Julia, then enter `Pkg` mode by pressing the`]` key. The prompt will change to:
 
     ```julia
     (@v1.10) pkg>
     ```
 
-3. Run following commands one by one:
+3. Run the following commands one by one:
 
     ```julia
     add JuMP

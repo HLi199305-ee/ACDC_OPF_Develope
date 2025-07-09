@@ -8,6 +8,7 @@ function acNet = create_ac(case_name)
 %       case_name_branch_ac.csv
 %       case_name_gen_ac.csv
 %       case_name_gencost_ac.csv
+%       case_name_res_ac.csv
 %
 %   The function returns a structure dcNet with the fields:
 %       acNet.baseMVA    - Scalar base MVA value 
@@ -15,6 +16,7 @@ function acNet = create_ac(case_name)
 %       acNet.branch     - AC network branch data
 %       acNet.gen        - AC generator data
 %       acNet.gencost    - AC generation cost data
+%       acNet.res        - AC integrated renewable energy source data
 %       acNet.grid       - Number of AC grids
 
     base_path = pwd;
@@ -25,7 +27,9 @@ function acNet = create_ac(case_name)
     [case_name, '_bus_ac.csv'],...
     [case_name, '_branch_ac.csv'],...
     [case_name, '_gen_ac.csv'],...
-    [case_name, '_gencost_ac.csv']...
+    [case_name, '_gencost_ac.csv'],...
+    [case_name, '_res_ac.csv'],...
+
     };
 
     %-------------------------Check missing files--------------------------
@@ -56,6 +60,9 @@ function acNet = create_ac(case_name)
 
     acNet.gencost = readmatrix(fullfile(base_path, ...
         [case_name '_gencost_ac.csv']));
+
+    acNet.res = readmatrix(fullfile(base_path, ...
+        [case_name '_res_ac.csv']));
 
     acNet.ngrids = size(unique(acNet.bus(:, 14)), 1);
 

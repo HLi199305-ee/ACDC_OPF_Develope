@@ -65,7 +65,7 @@ global residx pres_ac_k qres_ac_k ub_ac
             pres_ac, qres_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc);
     
     % Set up the objective function
-    [Obj] = setup_obj(ngrids, generator_ac, gencost_ac, pgen_ac, baseMVA_ac);
+    [Obj] = setup_obj(ngrids, generator_ac, gencost_ac, pgen_ac, res_ac, pres_ac, baseMVA_ac);
     
     % Combine all constraints
     Con = [con_dc; con_ac; con_cp];
@@ -772,7 +772,7 @@ global residx pres_ac_k qres_ac_k ub_ac
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function [Obj] = setup_obj(ngrids, generator_ac, gencost_ac, pgen_ac, baseMVA_ac)
+    function [Obj] = setup_obj(ngrids, generator_ac, gencost_ac, pgen_ac, res_ac, pres_ac, baseMVA_ac)
     % SETUPOBJ -Define the optimization objective of AC/DC OPF
     %
     % INPUTS:
@@ -780,6 +780,8 @@ global residx pres_ac_k qres_ac_k ub_ac
     %   generator_ac - Cell array. Containing generator data for each AC grid.
     %   gencost_ac   - Cell array. Containing generator cost data for each AC grid.
     %   pgen_ac      - Cell array. Generator active power outputs for each AC grid.
+    %   res_ac       - Cell array. Containing RES data for each AC grid.
+    %   pres_ac      - Cell array. RES active power outputs for each AC grid
     %   baseMVA_ac   - Scalar. AC base MVA.
     %
     % OUTPUTS:
@@ -788,23 +790,57 @@ global residx pres_ac_k qres_ac_k ub_ac
         % Initialization
         Obj = 0;
         
-        % Define Generation cost function
-        for ng = 1:ngrids
-            actgen = generator_ac{ng}(:, 8);
-            costType = gencost_ac{ng}(1, 4);
-            
-            % Compute the cost contribution for grid ng based on the cost model.
-            if costType == 3
-                Obj = Obj + sum( actgen .* ( baseMVA_ac^2 * gencost_ac{ng}(:, 5) .* (pgen_ac{ng}.^2) + ...
-                                             baseMVA_ac   * gencost_ac{ng}(:, 6) .* pgen_ac{ng} + ...
-                                             gencost_ac{ng}(:, 7) ) );
-            elseif costType == 2
-                Obj = Obj + sum( actgen .* ( baseMVA_ac * gencost_ac{ng}(:, 5) .* pgen_ac{ng} + ...
-                                             gencost_ac{ng}(:, 6) ) );
-            else
-                warning('Unrecognized cost model type (%d) for grid %d', costType, ng);
+        for ng = 1:ngrids     
+            Pgen    = pgen_ac{ng};            
+            actgen  = generator_ac{ng}(:, 8);   
+            typegen = gencost_ac{ng}(:, 4);      
+            agen    = gencost_ac{ng}(:, 5);
+            bgen    = gencost_ac{ng}(:, 6);
+            cgen    = gencost_ac{ng}(:, 7);
+
+            Pres    = pres_ac{ng};            
+            actres  = res_ac{ng}(:, 11);   
+            typeres = res_ac{ng}(:, 7);      
+            ares    = res_ac{ng}(:, 8);
+            bres    = res_ac{ng}(:, 9);
+            cres    = res_ac{ng}(:, 10);
+        
+            % ---------- Quadratic cost (type = 3) ----------
+            idxgen3 = (typegen == 3);
+            if any(idxgen3)
+                Pgen3 = Pgen(idxgen3);             
+                costgen3 = baseMVA_ac^2 * agen(idxgen3) .* (Pgen3.^2) + ...
+                        baseMVA_ac   * bgen(idxgen3) .*  Pgen3     + ...
+                        cgen(idxgen3);
+                Obj = Obj + sum( actgen(idxgen3) .* costgen3 );
             end
+
+            idxres3 = (typeres == 3);
+            if any(idxres3)
+                Pres3 = Pres(idxres3);             
+                costres3 = baseMVA_ac^2 * ares(idxres3) .* (Pres3.^2) + ...
+                        baseMVA_ac   * bres(idxres3) .*  Pres3     + ...
+                        cres(idxres3);
+                Obj = Obj + sum( actres(idxres3) .* costres3 );
+            end
+        
+            % ---------- Linear cost (type = 2) ----------
+            idxgen2 = (typegen == 2);
+            if any(idxgen2)
+                Pgen2 = Pgen(idxgen2);
+                costgen2 = baseMVA_ac * bgen(idxgen2) .* Pgen2 + c(idxgen2);
+                Obj = Obj + sum( actgen(idxgen2) .* costgen2 );
+            end
+
+            idxres2 = (typeres == 2);
+            if any(idxres2)
+                Pres2 = Pres(idxres2);             
+                costres2 = baseMVA_ac * bres(idxres2) .*  Pres2 + cres(idxres2);
+                Obj = Obj + sum( actres(idxres2) .* costres2 );
+            end
+        
         end
+
     end
 
 end

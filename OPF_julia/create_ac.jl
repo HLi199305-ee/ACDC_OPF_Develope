@@ -12,6 +12,7 @@ Expected CSV files (located in the same directory):
   - `<case_name>_branch_ac.csv`
   - `<case_name>_gen_ac.csv`
   - `<case_name>_gencost_ac.csv`
+  - `<case_name>_res_ac.csv`
 
 Returns a dictionary `ac` with the following keys:
   - "baseMVA"   : Scalar base MVA value.
@@ -19,6 +20,7 @@ Returns a dictionary `ac` with the following keys:
   - "branch"    : Matrix containing AC branch data.
   - "generator" : Matrix containing AC generator data.
   - "gencost"   : Matrix containing AC generator cost data.
+  - "res"       : Matrix containing AC RES data.
 """
 function create_ac(case_name::String)
     # Set the base path to the directory containing this file
@@ -34,6 +36,7 @@ function create_ac(case_name::String)
         "$(case_name)_branch_ac.csv",
         "$(case_name)_gen_ac.csv",
         "$(case_name)_gencost_ac.csv"
+        
     ]
 
     # Check missing files

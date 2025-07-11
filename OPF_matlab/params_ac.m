@@ -90,11 +90,11 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
     %% Process each AC grid
     for ng = 1:ngrids
         % Partition bus, branch, generator, gencost, and RES data for grid #ng
-        bus_ac{ng}       = bus_entire_ac(bus_entire_ac(:,14)==ng, :);
-        branch_ac{ng}    = branch_entire_ac(branch_entire_ac(:,14)==ng, :);
-        generator_ac{ng} = gen_entire_ac(gen_entire_ac(:,22)==ng, :);
-        gencost_ac{ng}   = gencost_entire_ac(gencost_entire_ac(:,8)==ng, :);
-        res_ac{ng}       = res_entire_ac(res_entire_ac(:,11)==ng, :);
+        bus_ac{ng}       = bus_entire_ac(bus_entire_ac(:, 14)==ng, :);
+        branch_ac{ng}    = branch_entire_ac(branch_entire_ac(:, 14)==ng, :);
+        generator_ac{ng} = gen_entire_ac(gen_entire_ac(:, 22)==ng, :);
+        gencost_ac{ng}   = gencost_entire_ac(gencost_entire_ac(:, 8)==ng, :);
+        res_ac{ng}       = res_entire_ac(res_entire_ac(:, 12)==ng, :);
     
         % Record the number of buses and branches in grid #ng
         nbuses_ac{ng}    = size(bus_ac{ng}, 1);

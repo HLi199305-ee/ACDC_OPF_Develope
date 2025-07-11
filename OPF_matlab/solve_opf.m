@@ -1,5 +1,5 @@
 function solve_opf(caseName_dc, caseName_ac, varargin)
-
+global residx pres_ac_k qres_ac_k ub_ac
 % SOLVE_OPF - Perform AC/DC Optimal Power Flow (OPF) analysis using YALMIP.
 %
 %   Loads AC and DC network parameters from the specified case files, 
@@ -39,7 +39,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
     gen_entire_ac, gencost_entire_ac, res_entire_ac, ...
     ngrids, bus_ac, branch_ac, generator_ac, gencost_ac, res_ac,...
-    recRef_ac, pd_ac, qd_ac, sres_ac, nbuses_ac, nbranches_ac, ngens_ac, nres_ac, ...
+    recRef_ac, pd_ac, qd_ac, sres_ac, nbuses_ac, nbranches_ac, ngens_ac, nress_ac, ...
     GG_ac, BB_ac, GG_ft_ac, BB_ft_ac, GG_tf_ac, BB_tf_ac, fbus_ac, tbus_ac] = params_ac(caseName_ac);
  
     tic; 
@@ -52,15 +52,17 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
         Ctt_dc, Ccc_dc, Ctc_dc, Stc_dc, Cct_dc, Sct_dc, convPloss_dc] = var_dc{:};
     
     % Set up AC variables and constraints
-    [var_ac, lb_ac, ub_ac, con_ac] = setup_ac(ngrids, nbuses_ac, ngens_ac, bus_ac, generator_ac, baseMVA_ac, pd_ac, qd_ac, GG_ac, BB_ac);
+    [var_ac, lb_ac, ub_ac, con_ac] = setup_ac(ngrids, nbuses_ac, ngens_ac, nress_ac, bus_ac, generator_ac, res_ac, ...
+        baseMVA_ac, pd_ac, qd_ac, GG_ac, BB_ac, sres_ac);
     % Unpack AC variables for each grid
     for ng = 1:ngrids
-        [vn2_ac{ng}, pn_ac{ng}, qn_ac{ng}, pgen_ac{ng}, qgen_ac{ng}, pij_ac{ng}, qij_ac{ng}, ss_ac{ng}, cc_ac{ng}] = var_ac{ng}{:};
+        [vn2_ac{ng}, pn_ac{ng}, qn_ac{ng}, pgen_ac{ng}, qgen_ac{ng}, pij_ac{ng}, qij_ac{ng}, ...
+            ss_ac{ng}, cc_ac{ng}, pres_ac{ng}, qres_ac{ng}] = var_ac{ng}{:};
     end
     
     % Set up AC/DC coupling constraints
-    [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, vn2_ac, generator_ac, ...
-        nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc);
+    [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, nress_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, ...
+            pres_ac, qres_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc);
     
     % Set up the objective function
     [Obj] = setup_obj(ngrids, generator_ac, gencost_ac, pgen_ac, baseMVA_ac);
@@ -83,7 +85,8 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     var_ac_k = cell(ngrids, 1);
     for ng = 1:ngrids
         var_ac_k{ng} = cellfun(@value, var_ac{ng}, 'UniformOutput', false);
-        [vn2_ac_k{ng}, pn_ac_k{ng}, qn_ac_k{ng}, pgen_ac_k{ng}, qgen_ac_k{ng}, pij_ac_k{ng}, qij_ac_k{ng}, ss_ac_k{ng}, cc_ac_k{ng}] = var_ac_k{ng}{:};
+        [vn2_ac_k{ng}, pn_ac_k{ng}, qn_ac_k{ng}, pgen_ac_k{ng}, qgen_ac_k{ng}, pij_ac_k{ng}, qij_ac_k{ng}, ...
+            ss_ac_k{ng}, cc_ac_k{ng}, pres_ac_k{ng}, qres_ac_k{ng}] = var_ac_k{ng}{:};
     end
     
     %% 5. Visulization AC/DC OPF Resutls
@@ -102,21 +105,21 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     end
   
     %%  Print OPF Results of AC Grid Bus
-      fprintf(fid, '\n=================================================================================');
-      fprintf(fid, '\n|      AC Grids Bus Data                                                        |');
-      fprintf(fid, '\n=================================================================================');
-      fprintf(fid, '\n Area   Branch        Voltage            Generation                Load        ');
-      fprintf(fid, '\n #      #       Mag [pu]  Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]   Qd [MVAr]');
-      fprintf(fid, '\n-----   -----   --------  ---------   --------  ---------   -------   ---------');
+      fprintf(fid, '\n===============================================================================================');
+      fprintf(fid, '\n|      AC Grids Bus Data                                                                      |');
+      fprintf(fid, '\n===============================================================================================');
+      fprintf(fid, '\n Area   Branch  Voltage         Generation               Load                    RES');
+      fprintf(fid, '\n #      #       Mag [pu]    Pg [MW]   Qg [MVAr]   Pd [MW]   Qd [MVAr]   Pres [MW]  Qres [MVAr] ');
+      fprintf(fid, '\n-----   -----   --------   --------   ---------   -------   ---------   ---------  ----------- ');
     
       for ng = 1:ngrids
           % Obtain generator bus indices for current grid
-          genidx = generator_ac{ng}(:,1);
+          genidx = generator_ac{ng}(:, 1);
+          residx = res_ac{ng}(:, 1);
           for i = 1:nbuses_ac{ng}
-              % Format AC voltage magnitude and angle (angle fixed at 0 deg)
+              % Format AC voltage magnitude
               formatted_vm_ac = sprintf('%.3f', sqrt(vn2_ac_k{ng}(i)));
-              formatted_va_ac = sprintf('%.3f', 0);
-              fprintf(fid, '\n %3d %7d %10s %10s', ng, i, formatted_vm_ac, formatted_va_ac);
+              fprintf(fid, '\n %3d %7d %10s', ng, i, formatted_vm_ac);
               
               % Mark reference bus with an asterisk
               if i == recRef_ac{ng}
@@ -138,17 +141,29 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
                   end
                   formatted_pd = sprintf('%.3f', pd_ac{ng}(i) * baseMVA_ac);
                   formatted_qd = sprintf('%.3f', qd_ac{ng}(i) * baseMVA_ac);
-                  fprintf(fid, '%10s %11s', formatted_pd, formatted_qd);
+                  fprintf(fid, '%11s %11s', formatted_pd, formatted_qd);
               else
                   fprintf(fid, '        -         -');
                   formatted_pd = sprintf('%.3f', pd_ac{ng}(i) * baseMVA_ac);
                   formatted_qd = sprintf('%.3f', qd_ac{ng}(i) * baseMVA_ac);
-                  fprintf(fid, '%13s %11s', formatted_pd, formatted_qd);
+                  fprintf(fid, '%14s %11s', formatted_pd, formatted_qd);
               end
+
+              if ismember(i, residx)
+                  m = res_ac{ng}(:,1);
+                  idx = find(m == i, 1);
+                  formatted_pres  = sprintf('%.3f', pres_ac_k{ng}(idx) * baseMVA_ac);
+                  formatted_qres  = sprintf('%.3f', qres_ac_k{ng}(idx) * baseMVA_ac);
+                  fprintf(fid,' %10s %12s', formatted_pres, formatted_qres);
+              else                               
+                  fprintf(fid,' %8s %11s','-','-');
+              end
+
           end
+   
       end
-      fprintf(fid, '\n-----   -----   --------  ---------   --------  ---------   -------   ---------');
-    
+      fprintf(fid, '\n-----   -----   --------   --------   ---------   -------   ---------   ---------  ----------- ');
+
       % Print total generation cost
       totalGenerationCost = value(Obj);
       fprintf(fid, '\n The total generation cost is ＄%.2f/MWh(€%.2f/MWh)', totalGenerationCost, totalGenerationCost/1.08);
@@ -483,7 +498,8 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function [var_ac, lb_ac, ub_ac, con_ac] = setup_ac(ngrids, nbuses_ac, ngens_ac, bus_ac, generator_ac, baseMVA_ac, pd_ac, qd_ac, GG_ac, BB_ac)
+    function [var_ac, lb_ac, ub_ac, con_ac] = setup_ac(ngrids, nbuses_ac, ngens_ac, nress_ac, bus_ac, generator_ac, res_ac, ...
+            baseMVA_ac, pd_ac, qd_ac, GG_ac, BB_ac, sres_ac)
     % SETUP_AC -Define AC grid optimization variables, bounds, and operational constraints.
     %
     %   INPUTS:
@@ -504,7 +520,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     %       ub_ac    - Cell arrary. Upper bounds for var_ac.
     %       con_ac   - Vector. Contain all AC network constraints.
     %
-    %   The AC decision variable vector, var_dc, is constructed with the following blocks:
+    %   The AC decision variable vector, var_ac, is constructed with the following blocks:
     %       1. AC nodal voltage squared (vn2_ac)
     %       2. AC active power injection (pn_ac)
     %       3. AC reactive power injection (qn_ac)
@@ -514,6 +530,8 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     %       7. AC branch reactive power flow (qij_ac)
     %       8. AC SOC relaxed term no.1 (ss_ac)
     %       9. AC SOC relaxed term no.2 (cc_ac)
+    %       10. RES active power output (pres_ac)
+    %       11. RES reactive power output (qres_ac)
     
         % Initialize cell arrays for each grid   
         var_ac = cell(ngrids, 1);
@@ -528,6 +546,8 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
         qij_ac = cell(ngrids, 1);
         ss_ac = cell(ngrids, 1);
         cc_ac = cell(ngrids, 1);
+        pres_ac = cell(ngrids, 1);
+        qres_ac = cell(ngrids, 1);
     
         con_ac = [];
         lb_default = -inf;
@@ -536,11 +556,12 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
         for ng = 1:ngrids
             
             % Initialization (a totoal of 9 kinds of variables)
-            var_ac{ng} = cell(9, 1);
-            lb_ac{ng} = cell(9, 1);
-            ub_ac{ng} = cell(9, 1);
+            var_ac{ng} = cell(11, 1);
+            lb_ac{ng} = cell(11, 1);
+            ub_ac{ng} = cell(11, 1);
             nbuses = nbuses_ac{ng};
             ngens = ngens_ac{ng};
+            nress = nress_ac{ng};
     
             % #1 AC nodal voltage squared (vn2_ac): nbuses x 1
             vn2_ac{ng} = sdpvar(nbuses, 1);
@@ -595,9 +616,22 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
             lb_ac{ng}{9} = lb_default;
             ub_ac{ng}{9} = ub_default;
             con_ac = [con_ac; lb_ac{ng}{9} <= cc_ac{ng} <= ub_ac{ng}{9}];
-    
+
+            % #10 RES active power output (pres_ac): nress x 1
+            pres_ac{ng} = sdpvar(nress, 1);
+            lb_ac{ng}{10} = 0;
+            ub_ac{ng}{10} = res_ac{ng}(:, 2) / baseMVA_ac;
+            con_ac = [con_ac; lb_ac{ng}{10} <= pres_ac{ng} <= ub_ac{ng}{10}];
+
+            % #11 RES active power output (pres_ac): nress x 1
+            qres_ac{ng} = sdpvar(nress, 1);
+            lb_ac{ng}{11} = lb_default;
+            ub_ac{ng}{11} = ub_default;
+            con_ac = [con_ac; lb_ac{ng}{11} <= qres_ac{ng} <= ub_ac{ng}{11}];
+
             % Bundle AC variables into a cell array
-            var_ac{ng} = {vn2_ac{ng}, pn_ac{ng}, qn_ac{ng}, pgen_ac{ng}, qgen_ac{ng}, pij_ac{ng}, qij_ac{ng}, ss_ac{ng}, cc_ac{ng}};
+            var_ac{ng} = {vn2_ac{ng}, pn_ac{ng}, qn_ac{ng}, pgen_ac{ng}, qgen_ac{ng}, ...
+                pij_ac{ng}, qij_ac{ng}, ss_ac{ng}, cc_ac{ng}, pres_ac{ng}, qres_ac{ng} };
     
             % --- AC Power Flow Constraints (Second-Order Cone Relaxation) ---
                 diag_ss_ac = diag(ss_ac{ng});     
@@ -637,14 +671,29 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
                 con_ac = [con_ac; 
                     diag_cc_ac >= 0 
                     diag_cc_ac == vn2_ac{ng}]; 
-    
+
+                % --- AC RES Capacity Constraints (Polygon approximation) ---
+                theta = (1:8)' * pi/8;            
+                C     = cos(theta);             
+                S     = sin(theta);               
+                
+                Pres = pres_ac{ng};               
+                Qres = qres_ac{ng};           
+                Sres = sres_ac{ng};       
+                
+                L =  C * Pres.' + S * Qres.';       
+                R =  repmat(Sres.', 8, 1);       
+                
+                con_ac = [ con_ac;  L(:) <= R(:);    -L(:) <= R(:) ];
+
         end
+
     end
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    function [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, vn2_ac, generator_ac, ...
-        nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
+    function [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, nress_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, ...
+            pres_ac, qres_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
     % SETUPCP -Set up AC and VSC coupling constraints for power injections and voltage.
     %
     %   INPUTS:
@@ -674,6 +723,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
             
             nbuses = nbuses_ac{ng};
             ngens = ngens_ac{ng};
+            nress = nress_ac{ng};
             a = sdpvar(nbuses, 1);
             % Dummy constraint: ensures con_cp is not empty to avoid errors in later processing.
             con_cp = [con_cp; a==0]; 
@@ -688,6 +738,13 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
                 pm_ac(index) = pm_ac(index) + pgen_ac{ng}(i);
                 qm_ac(index) = qm_ac(index) + qgen_ac{ng}(i);
             end
+
+            % If the AC node connected with RES
+            for i = 1:nress
+                index = res_ac{ng}(i, 1);
+                pm_ac(index) = pm_ac(index)+pres_ac{ng}(i);
+                qm_ac(index) = qm_ac(index)+qres_ac{ng}(i);
+            end
     
             %  If the AC node connected with VSC
             for i = 1:nconvs_dc
@@ -701,7 +758,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
             con_cp = [con_cp; 
                 pn_ac{ng} == pm_ac; 
                 qn_ac{ng} == qm_ac;
-                ];
+            ];
         end
             
         % --- Voltage Coupling Constraints ---

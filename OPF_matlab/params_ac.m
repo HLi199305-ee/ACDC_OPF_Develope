@@ -1,7 +1,7 @@
 function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
     gen_entire_ac, gencost_entire_ac, res_entire_ac, ...
     ngrids, bus_ac, branch_ac, generator_ac, gencost_ac, res_ac,...
-    recRef_ac, pd_ac, qd_ac, sres_ac, nbuses_ac, nbranches_ac, ngens_ac, nres_ac, ...
+    recRef_ac, pd_ac, qd_ac, sres_ac, nbuses_ac, nbranches_ac, ngens_ac, nress_ac, ...
     GG_ac, BB_ac, GG_ft_ac, BB_ft_ac, GG_tf_ac, BB_tf_ac, fbus_ac, tbus_ac] = params_ac(caseName_ac)
 % PARAMS_AC Constructs AC network parameters.
 %
@@ -69,7 +69,7 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
     nbuses_ac    = cell(ngrids, 1);
     nbranches_ac = cell(ngrids, 1);
     ngens_ac     = cell(ngrids, 1);
-    nres_ac      = cell(ngrids, 1);
+    nress_ac     = cell(ngrids, 1);
 
     % AC network admittance components for each grid
     YY_ac        = cell(ngrids, 1);
@@ -99,7 +99,8 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
         % Record the number of buses and branches in grid #ng
         nbuses_ac{ng}    = size(bus_ac{ng}, 1);
         nbranches_ac{ng} = size(branch_ac{ng}, 1);
-        ngens_ac{ng} = size(generator_ac{ng}, 1);
+        ngens_ac{ng}     = size(generator_ac{ng}, 1);
+        nress_ac{ng}     = size(res_ac{ng}, 1); 
       
         % Record the reference bus index for this grid 
         IDtoCountmap_ac{ng} = zeros(max(bus_ac{ng}(:,1)), 1);

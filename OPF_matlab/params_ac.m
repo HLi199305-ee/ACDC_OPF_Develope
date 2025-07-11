@@ -30,7 +30,7 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
 %       recRef_ac          - cell array. Recording the reference bus for each AC grid.
 %
 %       pd_ac, qd_ac       - cell array. Active/reactive loads (per unit).
-%       sres_ac            - cell array. RES Capacity (per unit). 
+%       sres_ac            - cell array. RES capacity (per unit). 
 %
 %       nbuses_ac          - cell array. Number of buses for each AC grid.
 %       nbranches_ac       - cell array. Number of branches for each AC grid.

@@ -264,7 +264,7 @@ function solve_opf(dc_name::String, ac_name::String;
                 elseif conv_dc[i, 4] == 2 # dc voltage control
                     @constraint(model, vn2_dc[i] == conv_dc[i, 8]^2)
                 else # droop control
-                    @constraint(model, pn_dc[i] == (conv_dc[i, 24] - 1 / conv_dc[i, 23] * (.5 + .5*vn_dc[i] - conv_dc[i, 25])) / baseMW * (-1))
+                    @constraint(model, pn_dc[i] == (conv_dc[i, 24] - 1 / conv_dc[i, 23] * (.5 + .5*vn2_dc[i] - conv_dc[i, 25])) / baseMW_dc * (-1))
                 end
                 # ac side control
                 if conv_dc[i, 5] == 1 # ac q control
@@ -328,16 +328,21 @@ function solve_opf(dc_name::String, ac_name::String;
         7. qij_ac   - AC branch reactive power flow
         8. ss_ac    - AC SOC relaxed term no.1
         9. cc_ac    - AC SOC relaxed term no.2
+        10.pres_ac  - AC RES active power 
+        11.qres_ac  - AC RES reactive power 
 
     INPUTS:
         - model: JuMP model.
         - ngrids: Number of AC grids.
         - nbuses_ac: Vectors containing the number of buses for each grid.
         - ngens_ac: Vectors containing the number of generators for each grid.
+        - nress_ac: Vectors containing the number of RESs for each grid.
         - bus_ac: Vectors of bus data matrices for each grid.
         - generator_ac: Vectors of generator data for each grid.
+        - res_ac: Vectors of RES data for each grid.
         - BB_ac: Vectors of Imaginary part of the AC admittance matrix.
         - GG_ac: Vectors of Real part of the AC admittance matrix.
+        - sres_ac: Vectors of the rated capacity of RESs. 
         - baseMVA_ac: AC base MVA
 
     Outputs (NamedTuple):
@@ -350,10 +355,13 @@ function solve_opf(dc_name::String, ac_name::String;
                     ngrids::Int64,
                     nbuses_ac::Vector{Int64},
                     ngens_ac::Vector{Int64},
+                    nress_ac::Vector{Int64},
                     bus_ac::Vector{Matrix{Float64}},
                     generator_ac::Vector{Matrix{Float64}},
+                    res_ac::Vector{Matrix{Float64}},
                     BB_ac::Vector{Matrix{Float64}},
                     GG_ac::Vector{Matrix{Float64}},
+                    sres_ac::Vector{Vector{Float64}},
                     baseMVA_ac::Number)
 
         # Pre-allocate 
@@ -369,17 +377,20 @@ function solve_opf(dc_name::String, ac_name::String;
         qij_ac       = Vector{Matrix{JuMP.VariableRef}}(undef, ngrids)
         ss_ac        = Vector{Matrix{JuMP.VariableRef}}(undef, ngrids)
         cc_ac        = Vector{Matrix{JuMP.VariableRef}}(undef, ngrids)
+        pres_ac      = Vector{Vector{JuMP.VariableRef}}(undef, ngrids)
+        qres_ac      = Vector{Vector{JuMP.VariableRef}}(undef, ngrids)
 
         # Loop over each AC grid to define variables and constraints
         for ng in 1:ngrids
             
             # --- Initialization (a totoal of 9 kinds of variables) ---
-            lb_ac[ng] = Vector{Vector{Float64}}(undef, 9)
-            ub_ac[ng] = Vector{Vector{Float64}}(undef, 9)
+            lb_ac[ng] = Vector{Vector{Float64}}(undef, 11)
+            ub_ac[ng] = Vector{Vector{Float64}}(undef, 11)
             lb_default = -1e4
             ub_default = 1e4
             nbuses = nbuses_ac[ng]
             ngens = ngens_ac[ng]
+            nress = nress_ac[ng]
 
             # --- 1 AC nodal voltage squared -vn2_ac: nbuses x 1 ---
             vn2_ac[ng] = @variable(model, [1:nbuses])
@@ -444,6 +455,20 @@ function solve_opf(dc_name::String, ac_name::String;
             @constraint(model, cc_ac[ng][:] .>= lb_ac[ng][9])
             @constraint(model, cc_ac[ng][:] .<= ub_ac[ng][9])
 
+            # --- 10 AC RES power output -pres_ac: nress x 1 ---
+            pres_ac[ng] = @variable(model, [1:nress])
+            lb_ac[ng][10] = fill(0, nbuses)
+            ub_ac[ng][10] = res_ac[ng][:, 2] ./ baseMVA_ac
+            @constraint(model, pres_ac[ng] .>= lb_ac[ng][10])
+            @constraint(model, pres_ac[ng] .<= ub_ac[ng][10])
+
+            # --- 11 AC RES reactive power output -qres_ac: nress x 1 ---
+            qres_ac[ng] = @variable(model, [1:nress])
+            lb_ac[ng][11] = fill(lb_default, nbuses)
+            ub_ac[ng][11] = fill(ub_default, nbuses)
+            @constraint(model, qres_ac[ng] .>= lb_ac[ng][11])
+            @constraint(model, qres_ac[ng] .<= ub_ac[ng][11])
+
             # ------------------------------
             # AC Nodal Power Balance Constraints 
             # ------------------------------
@@ -490,6 +515,8 @@ function solve_opf(dc_name::String, ac_name::String;
             qij_ac = qij_ac,
             ss_ac = ss_ac,
             cc_ac = cc_ac,
+            pres_ac = pres_ac,
+            qres_ac = qres_ac
         )
         return (var_ac = var_ac, lb_ac = lb_ac, ub_ac = ub_ac)
     end
@@ -525,14 +552,18 @@ function solve_opf(dc_name::String, ac_name::String;
         ngrids::Int,
         nbuses_ac::Vector{Int},
         ngens_ac::Vector{Int},
+        nress_ac::Vector{Int},
         pn_ac::Vector{Vector{JuMP.VariableRef}},
         qn_ac::Vector{Vector{JuMP.VariableRef}},
         pgen_ac::Vector{Vector{JuMP.VariableRef}},
         qgen_ac::Vector{Vector{JuMP.VariableRef}},
         pd_ac::Vector{Vector{Float64}},
         qd_ac::Vector{Vector{Float64}},
+        pres_ac::Vector{Vector{JuMP.VariableRef}},
+        qres_ac::Vector{Vector{JuMP.VariableRef}},
         vn2_ac::Vector{Vector{JuMP.VariableRef}},
         generator_ac::Vector{Matrix{Float64}},
+        res_ac::Vector{Matrix{Float64}},
         nconvs_dc::Int,
         ps_dc::Vector{JuMP.VariableRef},
         qs_dc::Vector{JuMP.VariableRef},
@@ -551,6 +582,11 @@ function solve_opf(dc_name::String, ac_name::String;
                 bus_index = Int(generator_ac[ng][i, 1])
                 pm_ac[bus_index] += pgen_ac[ng][i]
                 qm_ac[bus_index] += qgen_ac[ng][i]
+            end
+            for i in 1:nress_ac[ng]
+                bus_index = Int(res_ac[ng][i, 1])
+                pm_ac[bus_index] += pres_ac[ng][i]
+                qm_ac[bus_index] += qres_ac[ng][i]
             end
             # If the AC node connected with VSC
             for i in 1:nconvs_dc
@@ -669,17 +705,21 @@ function solve_opf(dc_name::String, ac_name::String;
         branch_entire_ac  = res_params_ac.branch_entire_ac
         gen_entire_ac     = res_params_ac.gen_entire_ac
         gencost_entire_ac = res_params_ac.gencost_entire_ac
+        res_entire_ac     = res_params_ac.res_entire_ac
         ngrids            = res_params_ac.ngrids
         bus_ac            = res_params_ac.bus_ac
         branch_ac         = res_params_ac.branch_ac
         generator_ac      = res_params_ac.generator_ac
         gencost_ac        = res_params_ac.gencost_ac
+        res_ac            = res_params_ac.res_ac
         recRef_ac         = res_params_ac.recRef_ac
         pd_ac             = res_params_ac.pd_ac
         qd_ac             = res_params_ac.qd_ac
+        sres_ac           = res_params_ac.sres_ac
         nbuses_ac         = res_params_ac.nbuses_ac
         nbranches_ac      = res_params_ac.nbranches_ac
         ngens_ac          = res_params_ac.ngens_ac
+        nress_ac          = res_params_ac.nress_ac
         GG_ac             = res_params_ac.GG_ac
         BB_ac             = res_params_ac.BB_ac
         GG_ft_ac          = res_params_ac.GG_ft_ac
@@ -720,7 +760,7 @@ function solve_opf(dc_name::String, ac_name::String;
         convPloss_dc = res_setup_dc.var_dc.convPloss_dc
 
         #  Set up AC variables and constraints
-        res_setup_ac = setup_ac(model, ngrids, nbuses_ac, ngens_ac, bus_ac, generator_ac, BB_ac, GG_ac, baseMVA_ac)
+        res_setup_ac = setup_ac(model, ngrids, nbuses_ac, ngens_ac, nress_ac, bus_ac, generator_ac, res_ac, BB_ac, GG_ac, sres_ac, baseMVA_ac)
         # Unpack AC variables for further use
         vn2_ac   = res_setup_ac.var_ac.vn2_ac
         pn_ac    = res_setup_ac.var_ac.pn_ac
@@ -731,10 +771,15 @@ function solve_opf(dc_name::String, ac_name::String;
         qij_ac   = res_setup_ac.var_ac.qij_ac
         ss_ac    = res_setup_ac.var_ac.ss_ac
         cc_ac    = res_setup_ac.var_ac.cc_ac
+        pres_ac  = res_setup_ac.var_ac.pres_ac
+        qres_ac  = res_setup_ac.var_ac.qres_ac
 
         # Set up AC/DC coupling constraints
-        setup_cp(model, ngrids, nbuses_ac, ngens_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, 
-                pd_ac, qd_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
+        # setup_cp(model, ngrids, nbuses_ac, ngens_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, 
+        #         pd_ac, qd_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
+
+        setup_cp(model, ngrids, nbuses_ac, ngens_ac, nress_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, 
+                pd_ac, qd_ac, pres_ac, qres_ac, vn2_ac, generator_ac, res_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
 
     
         # Set up Objectives

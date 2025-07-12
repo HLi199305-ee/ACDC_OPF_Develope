@@ -854,12 +854,14 @@ function solve_opf(dc_name::String, ac_name::String;
     qij_ac_k   = Vector{Any}(undef, ngrids)
     ss_ac_k    = Vector{Any}(undef, ngrids)
     cc_ac_k    = Vector{Any}(undef, ngrids)
+    pres_ac_k  = Vector{Any}(undef, ngrids)
+    qres_ac_k  = Vector{Any}(undef, ngrids)
 
     for ng in 1:ngrids
         (vn2_ac_k[ng], pn_ac_k[ng], qn_ac_k[ng], pgen_ac_k[ng], qgen_ac_k[ng], 
-        pij_ac_k[ng], qij_ac_k[ng], ss_ac_k[ng], cc_ac_k[ng]) =
+        pij_ac_k[ng], qij_ac_k[ng], ss_ac_k[ng], cc_ac_k[ng], pres_ac_k[ng], qres_ac_k[ng] ) =
         (JuMP.value.(x) for x in (vn2_ac[ng], pn_ac[ng], qn_ac[ng], pgen_ac[ng], qgen_ac[ng], 
-        pij_ac[ng], qij_ac[ng], ss_ac[ng], cc_ac[ng] ))
+        pij_ac[ng], qij_ac[ng], ss_ac[ng], cc_ac[ng], pres_ac[ng], qres_ac[ng] ))
     end
 
 
@@ -870,23 +872,21 @@ function solve_opf(dc_name::String, ac_name::String;
     # ----------------------------
     # Print AC Grid Bus Data
     # ---------------------------- 
-    println(io, "================================================================================")
-    println(io, "|   AC Grid Bus Data                                                           |")
-    println(io, "================================================================================")
-    println(io, " Area    Bus      Voltage             Generation                Load        ")
-    println(io, " #       #     Mag [pu] Ang [deg]   Pg [MW]   Qg [MVAr]   Pd [MW]  Qd [MVAr]")
-    println(io, "-----   -----  --------  --------   --------  ---------   -------- ---------")
+    println(io, "===========================================================================================")
+    println(io, "|   AC Grid Bus Data                                                                      |")
+    println(io, "===========================================================================================")
+    println(io, " Area    Bus   Voltage        Generation             Load                  RES")
+    println(io, " #       #     Mag [pu]  Pg [MW]   Qg [MVAr]   Pd [MW]  Qd [MVAr]  Pres [MW]  Qres [MVAr]")
+    println(io, "-----   -----  --------  --------   --------  ---------  --------  ---------  -----------")
     for ng in 1:ngrids
         genidx = generator_ac[ng][:, 1]
-        
+        residx = res_ac[ng][:, 1]
         for i in 1:nbuses_ac[ng][]
                 
             formatted_vm_ac = @sprintf("%.3f", sqrt(value(vn2_ac[ng][i])))
-            formatted_va_ac = @sprintf("%.3f", value(0 / π * 180))
         
-            print(io, lpad(ng, 3), " ", lpad(i, 7, " "), " ", 
-                    lpad(formatted_vm_ac, 10, " "),  
-                    lpad(formatted_va_ac, 10, " "))
+            print(io, lpad(ng, 3), " ",  lpad(i, 7), " ",
+                    lpad(formatted_vm_ac, 10, " ")) 
                 
             if i == recRef_ac[ng][]
                 print(io, "*")
@@ -898,10 +898,10 @@ function solve_opf(dc_name::String, ac_name::String;
                 formatted_qgen_ac = @sprintf("%.3f", value(qgen_ac[ng][findfirst(m .== i)[1], 1]) * baseMVA_ac)
                     
                 if i == recRef_ac[ng][]
-                    print(io, lpad(formatted_pgen_ac, 10, " "),
+                    print(io, lpad(formatted_pgen_ac, 9, " "),
                         lpad(formatted_qgen_ac, 11, " "))
                 else
-                    print(io, lpad(formatted_pgen_ac, 11, " "),
+                    print(io, lpad(formatted_pgen_ac, 10, " "),
                         lpad(formatted_qgen_ac, 11, " "))
                 end
                 
@@ -913,16 +913,26 @@ function solve_opf(dc_name::String, ac_name::String;
             else
                 formatted_pd = @sprintf("%.3f", value(pd_ac[ng][i]) * baseMVA_ac)
                 formatted_qd = @sprintf("%.3f", value(qd_ac[ng][i]) * baseMVA_ac)
-                print(io, " " * "        -           -")
+                print(io, " " * "       -           -")
                 print(io, lpad(formatted_pd, 11, " "), lpad(formatted_qd, 10, " "))
             end
+
+            if i in residx
+                m = res_ac[ng][:, 1]
+                formatted_pres_ac = @sprintf("%.3f", value(pres_ac[ng][findfirst(m .== i)[1], 1]) * baseMVA_ac)
+                formatted_qres_ac = @sprintf("%.3f", value(qres_ac[ng][findfirst(m .== i)[1], 1]) * baseMVA_ac)
+                print(io, lpad(formatted_pres_ac, 11, " "), lpad(formatted_qres_ac, 13, " "))
+            else
+                 print(io, "          -            -")
+            end
             print(io, "\n") 
+
         end
         
     end
         
     totalGenerationCost = objective_value(model)
-    println(io, "-----   -----  --------  --------   --------  ---------   -------- ---------")
+    println(io, "-----   -----  --------  --------   --------  ---------  --------  ---------  -----------")
     println(io, @sprintf("The total generation costs is ＄%.2f/MWh (€%.2f/MWh)", totalGenerationCost, totalGenerationCost / 1.08))
     print(io, "\n") 
 

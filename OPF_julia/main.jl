@@ -13,7 +13,7 @@ include("params_ac.jl") # obtain dc grid parameters
 include("solve_opf.jl") # solve ac/dc OPF
 include("viz_opf.jl") # visualize OPF 
 
-result_opf = solve_opf("mtdc3slack_a", "ac9ac14",
+result_opf = solve_opf("mtdc3slack_a", "ac14ac57",
                     vscControl = true,
                     writeTxt = false,
                     plotResult = false)

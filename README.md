@@ -1,18 +1,10 @@
-![alt text](IEPG_logo.jpg?raw=true) $~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$  ![alt text](cresym.png?raw=true)        
-
+![alt text](IEPG_logo.jpg?raw=true)  
+$~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$  
 # ACDC-OpFlow  
-###  Unified, Cross-Language Framework for AC/DC Optimal Power Flow Solutions
-Repository with Optimal Power Flow (OPF) library in Julia, Python, MATLAB, and C++ done as a part of the Harmony project (HARMONic stabilitY assessment of PE-penetrated power systems).
+### Development and Testing
 
-Code structure is simple and well-suited for researchers who are just beginning their journey into AC/DC OPF studies.
+This repository serves as a **development and testing** for  **ACDC-Opflow**
 
-Detailed information regarding AC/DC OPF problem formulation can be found in [Manual](Readme_ACDC_OPF.pdf).
+📖 For detailed problem formulation and user instructions, see the [Manual](Readme_ACDC_OPF.pdf).
 
-Further improvements and new features will be added.
-
-![alt text](ACDC_OPF.png?raw=true)
-
-## Contributors
-- **Haixiao Li**, design of the power flow solution, development of code in different languages, manual writting
-- **Azadeh Kermansaravi**, help with development of C++ power flow solution
-- **Aleksandra Lekić**, supervision, definition of the framework and functionalities, and acquisition of the funding
+🔗 The original public repository is available here:  [Respository](https://github.com/CRESYM/ACDC_OPF).

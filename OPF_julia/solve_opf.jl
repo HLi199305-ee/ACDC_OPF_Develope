@@ -457,15 +457,15 @@ function solve_opf(dc_name::String, ac_name::String;
 
             # --- 10 AC RES power output -pres_ac: nress x 1 ---
             pres_ac[ng] = @variable(model, [1:nress])
-            lb_ac[ng][10] = fill(0, nbuses)
+            lb_ac[ng][10] = fill(0, nress)
             ub_ac[ng][10] = res_ac[ng][:, 2] ./ baseMVA_ac
             @constraint(model, pres_ac[ng] .>= lb_ac[ng][10])
             @constraint(model, pres_ac[ng] .<= ub_ac[ng][10])
 
             # --- 11 AC RES reactive power output -qres_ac: nress x 1 ---
             qres_ac[ng] = @variable(model, [1:nress])
-            lb_ac[ng][11] = fill(lb_default, nbuses)
-            ub_ac[ng][11] = fill(ub_default, nbuses)
+            lb_ac[ng][11] = fill(lb_default, nress)
+            ub_ac[ng][11] = fill(ub_default, nress)
             @constraint(model, qres_ac[ng] .>= lb_ac[ng][11])
             @constraint(model, qres_ac[ng] .<= ub_ac[ng][11])
 
@@ -501,6 +501,28 @@ function solve_opf(dc_name::String, ac_name::String;
             @constraint(model, cc_upper.^2 .+ ss_upper.^2 .<= diag_cc_ac * transpose(diag_cc_ac))
             @constraint(model, diag_cc_ac .>= 0)
             @constraint(model, diag_cc_ac .== vn2_ac[ng])
+
+            # ------------------------------
+            # AC RES Capacity Constraints (Polygon approximation)
+            # ------------------------------
+            theta = collect(1:8) .* (π/8)         
+            C = cos.(theta)                     
+            S = sin.(theta)              
+
+            Pres = pres_ac[ng]          
+            Qres = qres_ac[ng]
+            Sres = sres_ac[ng]         
+
+            nress = length(Pres)
+
+            Cmat = C .* ones(1, nress)          
+            Smat = S .* ones(1, nress)         
+
+            L = Cmat .* Pres' .+ Smat .* Qres'   
+            R = repeat(Sres', 8, 1)
+
+            @constraint(model, vec(L) .<= vec(R))     
+            @constraint(model, vec(-L) .<= vec(R))   
 
         end
 
@@ -633,27 +655,41 @@ function solve_opf(dc_name::String, ac_name::String;
         generator_ac::Vector{Matrix{Float64}},
         gencost_ac::Vector{Matrix{Float64}},
         pgen_ac::Vector{Vector{JuMP.VariableRef}},
+        res_ac::Vector{Matrix{Float64}},
+        pres_ac::Vector{Vector{JuMP.VariableRef}},
         baseMVA_ac::Number)
 
         # Pre-allocate 
         actgen_ac = Vector{Vector{Float64}}(undef, ngrids)
+        actres_ac = Vector{Vector{Float64}}(undef, ngrids)
         obj       = Vector{Any}(undef, ngrids)
 
-        # Define generation costs
+        # Define generation and RES costs
         for ng in 1:ngrids
             actgen_ac[ng] = generator_ac[ng][:, 8]
+            actres_ac[ng] = res_ac[ng][:, 11]
+
             if gencost_ac[ng][1, 4] == 3  # Quadratic cost type
                 obj[ng] = sum( actgen_ac[ng] .* (baseMVA_ac^2 .* gencost_ac[ng][:, 5] .* pgen_ac[ng].^2 + 
                             baseMVA_ac .* gencost_ac[ng][:, 6] .* pgen_ac[ng] + 
                             gencost_ac[ng][:, 7]) )
-            elseif gencost_ac[ng][1, 4] == 2  # Linear cost type
-                obj[ng] = sum( actgen_ac[ng] .* (baseMVA_ac .* gencost_ac[ng][:, 5] .* pgen_ac[ng] + 
-                            gencost_ac[ng][:, 6]) )
-            else
-                error("Unsupported generator cost type in grid $ng")
+            end
+            if res_ac[ng][1, 7] == 3 
+                obj[ng] += sum( actres_ac[ng] .* (baseMVA_ac^2 .* res_ac[ng][:, 8] .* pres_ac[ng].^2 + 
+                            baseMVA_ac .* res_ac[ng][:, 9] .* pres_ac[ng] + 
+                            res_ac[ng][:, 10]) )
+            end
+
+            if gencost_ac[ng][1, 4] == 2  # Linear cost type
+                obj[ng] = sum( actgen_ac[ng] .* (baseMVA_ac .* gencost_ac[ng][:, 6] .* pgen_ac[ng] + 
+                            gencost_ac[ng][:, 7]) )
+            end
+            if res_ac[ng][1, 7] == 2 
+                obj[ng] += sum( actres_ac[ng] .* (baseMVA_ac .* res_ac[ng][:, 9] .* pres_ac[ng] + 
+                            res_ac[ng][:, 10]) )
             end
         end
-
+            
         Obj = sum(obj)
 
         return Obj
@@ -783,7 +819,7 @@ function solve_opf(dc_name::String, ac_name::String;
 
     
         # Set up Objectives
-        Obj = setup_obj(model, ngrids, generator_ac, gencost_ac, pgen_ac, baseMVA_ac)
+        Obj = setup_obj(model, ngrids, generator_ac, gencost_ac, pgen_ac, res_ac, pres_ac, baseMVA_ac)
 
         # Define overall objective as the sum of grid costs.
         @objective(model, Min, Obj)

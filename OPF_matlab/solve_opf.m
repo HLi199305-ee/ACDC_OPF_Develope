@@ -696,6 +696,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     %
     %   INPUTS:
     %       ngrids       - Number of AC grids.
+    %       nbuses_ac    - Cell array. Number of AC buses of AC grids.
     %       pn_ac        - Cell array. Active power injection of AC grids.
     %       qn_ac        - Cell array. Reactive power injection of AC grids.
     %       pgen_ac      - Cell array. Active generator power output of AC grids.

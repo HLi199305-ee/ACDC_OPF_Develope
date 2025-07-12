@@ -61,7 +61,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     
     % Set up AC/DC coupling constraints
     [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, nress_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, ...
-            pres_ac, qres_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc);
+            pres_ac, qres_ac, vn2_ac, generator_ac, res_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc);
     
     % Set up the objective function
     [Obj] = setup_obj(ngrids, generator_ac, gencost_ac, pgen_ac, res_ac, pres_ac, baseMVA_ac);
@@ -691,11 +691,12 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function [con_cp] = setup_cp(ngrids, nbuses_ac, ngens_ac, nress_ac, pn_ac, qn_ac, pgen_ac, qgen_ac, pd_ac, qd_ac, ...
-            pres_ac, qres_ac, vn2_ac, generator_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
+            pres_ac, qres_ac, vn2_ac, generator_ac, res_ac, nconvs_dc, ps_dc, qs_dc, v2s_dc, conv_dc)
     % SETUPCP -Set up AC and VSC coupling constraints for power injections and voltage.
     %
     %   INPUTS:
     %       ngrids       - Number of AC grids.
+    %       nbuses_ac    - Number of AC buses
     %       pn_ac        - Cell array. Active power injection of AC grids.
     %       qn_ac        - Cell array. Reactive power injection of AC grids.
     %       pgen_ac      - Cell array. Active generator power output of AC grids.
@@ -813,14 +814,14 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
                 Obj = Obj + sum( actgen(idxgen3) .* costgen3 );
             end
 
-%             idxres3 = (typeres == 3);
-%             if any(idxres3)
-%                 Pres3 = Pres(idxres3);             
-%                 costres3 = baseMVA_ac^2 * ares(idxres3) .* (Pres3.^2) + ...
-%                         baseMVA_ac   * bres(idxres3) .*  Pres3     + ...
-%                         cres(idxres3);
-%                 Obj = Obj + sum( actres(idxres3) .* costres3 );
-%             end
+            idxres3 = (typeres == 3);
+            if any(idxres3)
+                Pres3 = Pres(idxres3);             
+                costres3 = baseMVA_ac^2 * ares(idxres3) .* (Pres3.^2) + ...
+                        baseMVA_ac   * bres(idxres3) .*  Pres3     + ...
+                        cres(idxres3);
+                Obj = Obj + sum( actres(idxres3) .* costres3 );
+            end
         
             % ---------- Linear cost (type = 2) ----------
             idxgen2 = (typegen == 2);
@@ -830,12 +831,12 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
                 Obj = Obj + sum( actgen(idxgen2) .* costgen2 );
             end
 
-%             idxres2 = (typeres == 2);
-%             if any(idxres2)
-%                 Pres2 = Pres(idxres2);             
-%                 costres2 = baseMVA_ac * bres(idxres2) .*  Pres2 + cres(idxres2);
-%                 Obj = Obj + sum( actres(idxres2) .* costres2 );
-%             end
+            idxres2 = (typeres == 2);
+            if any(idxres2)
+                Pres2 = Pres(idxres2);             
+                costres2 = baseMVA_ac * bres(idxres2) .*  Pres2 + cres(idxres2);
+                Obj = Obj + sum( actres(idxres2) .* costres2 );
+            end
         
         end
 

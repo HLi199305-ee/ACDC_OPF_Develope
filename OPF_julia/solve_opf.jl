@@ -605,6 +605,7 @@ function solve_opf(dc_name::String, ac_name::String;
                 pm_ac[bus_index] += pgen_ac[ng][i]
                 qm_ac[bus_index] += qgen_ac[ng][i]
             end
+            #  If the AC node connected with RES
             for i in 1:nress_ac[ng]
                 bus_index = Int(res_ac[ng][i, 1])
                 pm_ac[bus_index] += pres_ac[ng][i]

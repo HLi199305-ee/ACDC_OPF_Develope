@@ -82,7 +82,8 @@ def create_ac(case_name: str) -> Dict[str, Any]:
         "_bus_ac.csv",
         "_branch_ac.csv",
         "_gen_ac.csv",
-        "_gencost_ac.csv"
+        "_gencost_ac.csv",
+        "_res_ac.csv"
     ]
     required_files: List[Path] = [script_dir / f"{case_name}{suffix}" for suffix in file_suffixes]
 
@@ -97,6 +98,11 @@ def create_ac(case_name: str) -> Dict[str, Any]:
         "bus": pd.read_csv(required_files[1], header=None).to_numpy(),
         "branch": pd.read_csv(required_files[2], header=None).to_numpy(),
         "generator": pd.read_csv(required_files[3], header=None).to_numpy(),
-        "gencost": pd.read_csv(required_files[4], header=None).to_numpy()
+        "gencost": pd.read_csv(required_files[4], header=None).to_numpy(),
+        "res": pd.read_csv(required_files[5], header=None).to_numpy()
     }
     return ac
+
+if __name__ == "__main__":
+    network_dc = create_dc("mtdc3slack_a")
+    network_ac = create_ac("ac14ac57")

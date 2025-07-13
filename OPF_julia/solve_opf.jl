@@ -455,7 +455,7 @@ function solve_opf(dc_name::String, ac_name::String;
             @constraint(model, cc_ac[ng][:] .>= lb_ac[ng][9])
             @constraint(model, cc_ac[ng][:] .<= ub_ac[ng][9])
 
-            # --- 10 AC RES power output -pres_ac: nress x 1 ---
+            # --- 10 AC RES active power output -pres_ac: nress x 1 ---
             pres_ac[ng] = @variable(model, [1:nress])
             lb_ac[ng][10] = fill(0, nress)
             ub_ac[ng][10] = res_ac[ng][:, 2] ./ baseMVA_ac
@@ -597,8 +597,8 @@ function solve_opf(dc_name::String, ac_name::String;
             pm_ac = [AffExpr(0.0) for _ in 1:nbuses_ac[ng]]
             qm_ac = [AffExpr(0.0) for _ in 1:nbuses_ac[ng]]
             #  Every AC node have load 
-            pm_ac .= pm_ac .- pd_ac[ng]
-            qm_ac .= qm_ac .- qd_ac[ng]
+            pm_ac .-= pd_ac[ng]
+            qm_ac .-= qd_ac[ng]
             #  If the AC node connected with generator
             for i in 1:ngens_ac[ng]
                 bus_index = Int(generator_ac[ng][i, 1])

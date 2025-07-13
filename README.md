@@ -1,4 +1,4 @@
-![alt text](ACDCOpflow-Logo.jpg?raw=true)  
+![alt text](OPF-Logo.jpg?raw=true)  
 $~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$  
 # ACDC-OpFlow  
 ### Development and Testing

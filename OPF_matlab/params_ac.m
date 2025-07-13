@@ -35,7 +35,7 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
 %       nbuses_ac          - cell array. Number of buses for each AC grid.
 %       nbranches_ac       - cell array. Number of branches for each AC grid.
 %       ngens_ac           - cell array. Number of generators for each AC grid.
-%       nres_ac            - cell array. Number of RES for each AC grid.
+%       nress_ac           - cell array. Number of RES for each AC grid.
 %
 %       GG_ac, BB_ac       - cell array. Real and Imaginary parts of the AC admittance matrix (per unit).
 %
@@ -48,12 +48,12 @@ function [network_ac, baseMVA_ac, bus_entire_ac, branch_entire_ac, ...
     %% Load AC grid data 
     network_ac          = create_ac(caseName_ac);
     bus_entire_ac       = network_ac.bus;
-    branch_entire_ac    = network_ac.branch;
+    branch_entire_ac    = network_ac.branch(network_ac.branch(:, 11) == 1, :);
     gen_entire_ac       = network_ac.gen;
     gencost_entire_ac   = network_ac.gencost;
     res_entire_ac       = network_ac.res;
     baseMVA_ac          = network_ac.baseMVA;
-    ngrids              = network_ac.ngrids;
+    ngrids              = size(unique(bus_entire_ac(:, 14)), 1);
 
     %% Initialize cells to store grid data
     bus_ac       = cell(ngrids, 1);

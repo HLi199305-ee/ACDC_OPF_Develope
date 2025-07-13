@@ -17,7 +17,6 @@ function acNet = create_ac(case_name)
 %       acNet.gen        - AC generator data
 %       acNet.gencost    - AC generation cost data
 %       acNet.res        - AC integrated renewable energy source data
-%       acNet.grid       - Number of AC grids
 
     base_path = pwd;
 
@@ -62,8 +61,6 @@ function acNet = create_ac(case_name)
 
     acNet.res = readmatrix(fullfile(base_path, ...
         [case_name '_res_ac.csv']));
-
-    acNet.ngrids = size(unique(acNet.bus(:, 14)), 1);
 
 end
 

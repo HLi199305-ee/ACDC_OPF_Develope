@@ -941,7 +941,7 @@ function solve_opf(dc_name::String, ac_name::String;
     # Print AC Grid Branch Data
     # ----------------------------
     println(io, "===========================================================================================")
-    println(io, "|     AC Grids Branch Data                                                                |")
+    println(io, "|     AC Grid Branch Data                                                                 |")
     println(io, "===========================================================================================")
     println(io, " Area   Branch  From   To        From Branch Flow         To Branch Flow      Branch Loss")
     println(io, " #      #       Bus#   Bus#    Pij [MW]   Qij [MVAr]    Pij [MW]   Qij [MVAr]  Pij_loss [MW]")

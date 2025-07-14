@@ -180,7 +180,7 @@ def solve_opf(dcgrid_name: str, acgrid_name: str, *,
         # Print AC Grid Branch Data
         # ----------------------------
         print("===========================================================================================", file=io)
-        print("|     AC Grids Branch Data                                                                |", file=io)
+        print("|     AC Grid Branch Data                                                                 |", file=io)
         print("===========================================================================================", file=io)
         print("Area   Branch  From   To        From Branch Flow         To Branch Flow        Branch Loss", file=io)
         print("#      #       Bus#   Bus#    Pij [MW]   Qij [MVAr]    Pij [MW]   Qij [MVAr]  Pij_loss [MW]", file=io)

@@ -105,7 +105,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
   
     %%  Print OPF Results of AC Grid Bus
       fprintf(fid, '\n===============================================================================================');
-      fprintf(fid, '\n|      AC Grids Bus Data                                                                      |');
+      fprintf(fid, '\n|      AC Grid Bus Data                                                                       |');
       fprintf(fid, '\n===============================================================================================');
       fprintf(fid, '\n Area   Branch  Voltage         Generation               Load                    RES');
       fprintf(fid, '\n #      #       Mag [pu]    Pg [MW]   Qg [MVAr]   Pd [MW]   Qd [MVAr]   Pres [MW]  Qres [MVAr] ');
@@ -170,7 +170,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     
     %% Print OPF Results of AC Grid Branch
       fprintf(fid, '\n===========================================================================================');
-      fprintf(fid, '\n|     AC Grids Branch Data                                                                |');
+      fprintf(fid, '\n|     AC Grid Branch Data                                                                 |');
       fprintf(fid, '\n===========================================================================================');
       fprintf(fid, '\n Area   Branch  From   To        From Branch Flow         To Branch Flow      Branch Loss');
       fprintf(fid, '\n #      #       Bus#   Bus#    Pij [MW]   Qij [MVAr]    Pij [MW]   Qij [MVAr]  Pij_loss [MW]');

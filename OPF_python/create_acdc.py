@@ -65,6 +65,7 @@ def create_ac(case_name: str) -> Dict[str, Any]:
         <case_name>_bus_ac.csv
         <case_name>_branch_ac.csv
         <case_name>_gen_ac.csv
+        <case_name>_res_ac.csv
 
     Returns a dictionary `dc` with the following keys:
         "baseMVA": Scalar base MVA value.
@@ -72,6 +73,7 @@ def create_ac(case_name: str) -> Dict[str, Any]:
         "branch": Matrix containing AC branch data.
         "generator": Matrix containing AC generator data.
         "gencost": Matrix containing AC generator cost data.
+        "res": Matrix containing AC RES data.
 
     """
     #Set the base path to the directory containing this file

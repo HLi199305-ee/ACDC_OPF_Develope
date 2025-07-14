@@ -874,8 +874,8 @@ def setup_cp(model:ConcreteModel, res_params_dc: Dict[str, Any], res_params_ac: 
         pm_ac = {i: 0.0 for i in range(nbuses_ac[ng])}
         qm_ac = {i: 0.0 for i in range(nbuses_ac[ng])}
         
-        for i in range(ngens_ac[ng]):
         #  If the AC node connected with generator
+        for i in range(ngens_ac[ng]):
             index = int(generator_ac[ng][i, 0]) - 1
             pm_ac[index] += model.pgen_ac[ng, i]
             qm_ac[index] += model.qgen_ac[ng, i]

@@ -292,28 +292,32 @@ def solve_opf(dcgrid_name: str, acgrid_name: str, *,
      Stc_dc_k, Cct_dc_k, Sct_dc_k, convPloss_dc_k) = extract_vals_dc(model, nbuses_dc, nconvs_dc)
     
     (vn2_ac_k, pn_ac_k, qn_ac_k, pgen_ac_k, qgen_ac_k,
-     pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k) = extract_vals_ac(model, ngrids, nbuses_ac, ngens_ac)
+     pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k, pres_ac_k, qres_ac_k) = extract_vals_ac(model, ngrids, nbuses_ac, ngens_ac, nress_ac)
     
     if plotResult:
         viz_opf(
         bus_entire_ac,
         branch_entire_ac,
+        generator_entire_ac,
+        res_entire_ac,
+        pgen_ac_k,
+        qgen_ac_k,
+        pij_ac_k,
+        qij_ac_k,
+        pres_ac_k,
+        qres_ac_k,
+        vn2_ac_k,
+        baseMVA_ac,
         bus_dc,
         branch_dc,
         conv_dc,
-        generator_entire_ac,
-        pgen_ac_k,
-        qgen_ac_k,
-        baseMVA_ac,
-        vn2_ac_k,
-        vn2_dc_k,
-        pij_ac_k,
-        qij_ac_k,
         pij_dc_k,
         ps_dc_k,
         qs_dc_k,
+        vn2_dc_k,
+        pol_dc,
         baseMW_dc,
-        pol_dc)
+        )
 
     return model
 
@@ -1023,6 +1027,7 @@ def extract_vals_ac(
     ngrids: int,
     nbuses_ac: int,
     ngens_ac: int,
+    nress_ac: int,
 ) -> None:
     """
     Extract AC side optimization variable values from the model.
@@ -1041,14 +1046,15 @@ def extract_vals_ac(
     qij_ac_k  = []
     ss_ac_k   = []
     cc_ac_k   = []
+    pres_ac_k = []
+    qres_ac_k = []
     
     for ng in range(ngrids):
         vn2 = np.array([value(model.vn2_ac[ng, i]) for i in range(nbuses_ac[ng])])
         pn  = np.array([value(model.pn_ac[ng, i]) for i in range(nbuses_ac[ng])])
         qn  = np.array([value(model.qn_ac[ng, i]) for i in range(nbuses_ac[ng])])
         pgen = np.array([value(model.pgen_ac[ng, i]) for i in range(ngens_ac[ng])])
-        qgen = np.array([value(model.qgen_ac[ng, i]) for i in range(ngens_ac[ng])])
-        
+        qgen = np.array([value(model.qgen_ac[ng, i]) for i in range(ngens_ac[ng])])   
         pij = np.array([[value(model.pij_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
                         for i in range(nbuses_ac[ng])])
         qij = np.array([[value(model.qij_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
@@ -1057,6 +1063,8 @@ def extract_vals_ac(
                        for i in range(nbuses_ac[ng])])
         cc = np.array([[value(model.cc_ac[ng, i, j]) for j in range(nbuses_ac[ng])]
                        for i in range(nbuses_ac[ng])])
+        pres = np.array([value(model.pres_ac[ng, i]) for i in range(nress_ac[ng])])
+        qres = np.array([value(model.qres_ac[ng, i]) for i in range(nress_ac[ng])])  
         
         vn2_ac_k.append(vn2)
         pn_ac_k.append(pn)
@@ -1067,9 +1075,11 @@ def extract_vals_ac(
         qij_ac_k.append(qij)
         ss_ac_k.append(ss)
         cc_ac_k.append(cc)
+        pres_ac_k.append(pres)
+        qres_ac_k.append(qres)
     
     return (vn2_ac_k, pn_ac_k, qn_ac_k, pgen_ac_k, qgen_ac_k,
-            pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k)
+        pij_ac_k, qij_ac_k, ss_ac_k, cc_ac_k, pres_ac_k, qres_ac_k)
     
    
 if __name__ == "__main__":

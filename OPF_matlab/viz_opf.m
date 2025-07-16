@@ -23,12 +23,11 @@ function viz_opf(bus_entire_ac, branch_entire_ac, gen_entire_ac, res_entire_ac, 
 %   pij_dc_k            - Optimized resutls of the DC branch active power.
 %   ps_dc_k             - Optimized results of the VSC PCC active power.
 %   qs_dc_k             - Optimized results of the VSC PCC reactive power.
-%   vn2_dc_k            - Optimized results of the DC network.
+%   vn2_dc_k            - Optimized results of the squared DC voltage.
 %   pol_dc              - Polarity of the DC network
 %   baseMW_dc           - DC system base MW value.
 
-% OUTPUTS: None
-
+% OUTPUTS: Figure
 %% Reorder AC Data---------------------------------------------------------
 numBuses_ac = size(bus_entire_ac, 1);
 oldBusNums_ac = bus_entire_ac(:, 1);
@@ -158,7 +157,7 @@ for i = 1:length(acBusNums)
         xAll(end+1) = p.XData(idx);
         yAll(end+1) = p.YData(idx);
         sAll(end+1) = resPower;
-        cAll(end+1,:) = [0 1 0];   
+        cAll(end+1,:) = [0 0.6 0];   
     end
 end
 
@@ -296,10 +295,10 @@ for i = 1:numNodes
 end
 drawnow;
 
-%% Mark--------------------------------------------------------------------
+%% Legend--------------------------------------------------------------------
 markACLoad = scatter(NaN, NaN, 80, [1, 0, 0], 'o', 'filled');   
 markACGen  = scatter(NaN, NaN, 80, [0, 0.45, 1], 'o', 'filled');   
-markACRES  = scatter(NaN, NaN, 80, [0, 1, 0], 'o', 'filled');   
+markACRES  = scatter(NaN, NaN, 80, [0, 0.6, 0], 'o', 'filled');   
 markDCConv = scatter(NaN, NaN, 80, [0, 0, 1], '^', 'filled');   
 markLine = plot(NaN, NaN, 'color', [0.85, 0.5, 0.1], 'LineWidth', 1); 
 

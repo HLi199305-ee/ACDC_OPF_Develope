@@ -832,7 +832,7 @@ void solve_opf(const std::string& dc_name, const std::string& ac_name,
 
             // 2. ac variable results
             std::vector<Eigen::VectorXd> vn2_ac_k(ngrids), pn_ac_k(ngrids), qn_ac_k(ngrids),
-                pgen_ac_k(ngrids), qgen_ac_k(ngrids);
+                pgen_ac_k(ngrids), qgen_ac_k(ngrids), pres_ac_k(ngrids), qres_ac_k(ngrids);
             std::vector<Eigen::MatrixXd> pij_ac_k(ngrids), qij_ac_k(ngrids),
                 ss_ac_k(ngrids), cc_ac_k(ngrids);
 
@@ -842,6 +842,8 @@ void solve_opf(const std::string& dc_name, const std::string& ac_name,
                 qn_ac_k[ng].resize(nbuses_ac[ng]);
                 pgen_ac_k[ng].resize(ngens_ac[ng]);
                 qgen_ac_k[ng].resize(ngens_ac[ng]);
+                pres_ac_k[ng].resize(nress_ac[ng]);
+                qres_ac_k[ng].resize(nress_ac[ng]);
                 pij_ac_k[ng].resize(nbuses_ac[ng], nbuses_ac[ng]);
                 qij_ac_k[ng].resize(nbuses_ac[ng], nbuses_ac[ng]);
                 ss_ac_k[ng].resize(nbuses_ac[ng], nbuses_ac[ng]);
@@ -852,9 +854,15 @@ void solve_opf(const std::string& dc_name, const std::string& ac_name,
                     pn_ac_k[ng](i) = pn_ac[ng](i).get(GRB_DoubleAttr_X);
                     qn_ac_k[ng](i) = qn_ac[ng](i).get(GRB_DoubleAttr_X);
                 }
+                
                 for (int i = 0; i < ngens_ac[ng]; ++i) {
                     pgen_ac_k[ng](i) = pgen_ac[ng](i).get(GRB_DoubleAttr_X);
                     qgen_ac_k[ng](i) = qgen_ac[ng](i).get(GRB_DoubleAttr_X);
+                }
+               
+                for (int i = 0; i < nress_ac[ng]; ++i) {
+                    pres_ac_k[ng](i) = pres_ac[ng](i).get(GRB_DoubleAttr_X);
+                    qres_ac_k[ng](i) = qres_ac[ng](i).get(GRB_DoubleAttr_X);
                 }
 
                 for (int i = 0; i < nbuses_ac[ng]; ++i)
@@ -872,32 +880,31 @@ void solve_opf(const std::string& dc_name, const std::string& ac_name,
             vis_data.bus_entire_ac = bus_entire_ac;
             vis_data.branch_entire_ac = branch_entire_ac;
             vis_data.gen_entire_ac = gen_entire_ac;
+            vis_data.res_entire_ac = res_entire_ac;
+            vis_data.pgen_ac_k = pgen_ac_k;
+            vis_data.qgen_ac_k = qgen_ac_k;
+            vis_data.pres_ac_k = pres_ac_k;
+            vis_data.qres_ac_k = qres_ac_k;
+            vis_data.pij_ac_k = pij_ac_k;
+            vis_data.qij_ac_k = qij_ac_k;
+            vis_data.vn2_ac_k = vn2_ac_k;
+            vis_data.baseMVA_ac = baseMVA_ac;
+            vis_data.nbuses_ac = nbuses_ac;
+            vis_data.ngens_ac = ngens_ac;
+            vis_data.nress_ac = nress_ac;
+
             vis_data.bus_dc = bus_dc;
             vis_data.branch_dc = branch_dc;
             vis_data.conv_dc = conv_dc;
-
-            vis_data.vn2_dc_k = vn2_dc_k;
+            vis_data.pij_dc_k = pij_dc_k;
             vis_data.ps_dc_k = ps_dc_k;
             vis_data.qs_dc_k = qs_dc_k;
-            vis_data.pij_dc_k = pij_dc_k;
-
-            vis_data.nbuses_ac = nbuses_ac;
-            vis_data.ngens_ac = ngens_ac;
-
-            vis_data.vn2_ac_k = vn2_ac_k;
-            vis_data.pgen_ac_k = pgen_ac_k;
-            vis_data.qgen_ac_k = qgen_ac_k;
-
-            vis_data.pij_ac_k = pij_ac_k;
-            vis_data.qij_ac_k = qij_ac_k;
-
+            vis_data.vn2_dc_k = vn2_dc_k;
+            vis_data.pol_dc = pol_dc;
+            vis_data.baseMW_dc = baseMW_dc;
             vis_data.nconvs_dc = nconvs_dc;
             vis_data.nbuses_dc = nbuses_dc;
             vis_data.ngrids = ngrids;
-
-            vis_data.baseMVA_ac = baseMVA_ac;
-            vis_data.baseMW_dc = baseMW_dc;
-            vis_data.pol_dc = pol_dc;
 
             if (plotResult) {
                 viz_opf(vis_data);

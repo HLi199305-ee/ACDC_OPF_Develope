@@ -144,12 +144,12 @@ for i = 1:length(acBusNums)
     sAll(end+1) = 1e-3 + loadPower;
     cAll(end+1,:) = [1 0 0];          
 
-    % Generator（blue）
+    % Generator（skyblue）
     if genPower > 0
         xAll(end+1) = p.XData(idx);
         yAll(end+1) = p.YData(idx);
         sAll(end+1) = genPower;
-        cAll(end+1,:) = [0 0.45 1];      
+        cAll(end+1,:) = [0.53 0.81 0.98];      
     end
 
     % RES (green)
@@ -297,7 +297,7 @@ drawnow;
 
 %% Legend--------------------------------------------------------------------
 markACLoad = scatter(NaN, NaN, 80, [1, 0, 0], 'o', 'filled');   
-markACGen  = scatter(NaN, NaN, 80, [0, 0.45, 1], 'o', 'filled');   
+markACGen  = scatter(NaN, NaN, 80, [0.53, 0.81, 0.98], 'o', 'filled');   
 markACRES  = scatter(NaN, NaN, 80, [0, 0.6, 0], 'o', 'filled');   
 markDCConv = scatter(NaN, NaN, 80, [0, 0, 1], '^', 'filled');   
 markLine = plot(NaN, NaN, 'color', [0.85, 0.5, 0.1], 'LineWidth', 1); 

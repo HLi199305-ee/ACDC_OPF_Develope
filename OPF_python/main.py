@@ -20,6 +20,7 @@
 # [2]  Mauro Escobar, https ://github.com/me2533/acopf
 # [3]  Matacdc1.0 unser's manual, https://www.esat.kuleuven.be/electa/teaching/matacdc/MatACDCManual
 
+# Remind: move ac/dc .csv files in "ACDC_CSV" folder to "OPF_python" folder
 from opf_acdc import solve_opf
 result_opf = solve_opf("mtdc3slack_a", "ac14ac57", 
                        vscControl=True,

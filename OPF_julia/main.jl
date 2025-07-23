@@ -28,6 +28,7 @@ include("params_ac.jl") # obtain dc grid parameters
 include("solve_opf.jl") # solve ac/dc OPF
 include("viz_opf.jl") # visualize OPF 
 
+# Remind: move ac/dc .csv files in "ACDC_CSV" folder to "OPF_julia" folder
 result_opf = solve_opf("mtdc3slack_a", "ac14ac57",
                     vscControl = true,
                     writeTxt = false,

@@ -22,17 +22,19 @@
 
 #include "benchmarkTools.h"
 #include "solve_opf.h"
+
+// Remind: move ac / dc.csv files in "ACDC_CSV" folder to "OPF_cpp" folder
 int main() {
     solve_opf("mtdc3slack_a", "ac14ac57",
         /*vscControl*/ true,
         /*writeTxt  */ false,
         /*plotResult*/ false);
 
-   /* std::vector<std::string> test_cases = { "ac9ac14" };
-    std::string dc_case = "mtdc3slack_a";
-    std::vector<BenchmarkResult> results;
+    //std::vector<std::string> test_cases = { "ac14ac57", "ac57ac118", "ac9ac14", "ac118ac300" };
+    //std::string dc_case = "mtdc3slack_a";
+    //std::vector<BenchmarkResult> results;
 
-    run_benchmark(test_cases, dc_case, results);
-    print_summary(results);
-    save_results_csv(results, "benchmark_cpp.csv");*/
+    //run_benchmark(test_cases, dc_case, results);
+    //print_summary(results);
+    //save_results_csv(results, "benchmark_cpp.csv");
 }

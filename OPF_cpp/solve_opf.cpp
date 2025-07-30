@@ -574,7 +574,7 @@ void solve_opf(const std::string& dc_name, const std::string& ac_name,
         std::ostream* pio = &std::cout;          
         std::string   outfile;
         if (writeTxt) {
-            outfile = (std::filesystem::current_path() / "opf_results.txt").string();
+            outfile = (std::filesystem::current_path() / "opf_results_cpp.txt").string();
             fout.open(outfile, std::ofstream::out | std::ofstream::trunc);
             pio = &fout;                        
         }

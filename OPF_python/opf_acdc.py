@@ -109,7 +109,7 @@ def solve_opf(dcgrid_name: str, acgrid_name: str, *,
 
 
     # ============================ Print Results =============================
-    outfile = os.path.join(os.getcwd(), "opf_results.txt")
+    outfile = os.path.join(os.getcwd(), "opf_results_python.txt")
     io_ctx  = open(outfile, "w", encoding="utf-8") if writeTxt else nullcontext()
     io      = io_ctx if writeTxt else sys.stdout
     with io_ctx if writeTxt else nullcontext():

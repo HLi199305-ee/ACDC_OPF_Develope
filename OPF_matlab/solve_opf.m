@@ -98,7 +98,7 @@ function solve_opf(caseName_dc, caseName_ac, varargin)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Set Output Directory (1 = command window)
     if writeTxt
-        filePath = fullfile(pwd, 'opf_results.txt');
+        filePath = fullfile(pwd, 'opf_results_matlab.txt');
         fid = fopen(filePath, 'w', 'n', 'UTF-8');  
     else
         fid = 1;  

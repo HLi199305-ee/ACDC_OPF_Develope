@@ -867,7 +867,7 @@ function solve_opf(dc_name::String, ac_name::String;
 
 
     # ============================ Print Results =============================
-    outfile = joinpath(pwd(), "opf_results.txt")
+    outfile = joinpath(pwd(), "opf_results_julia.txt")
     io = writeTxt ? open(outfile, "w") : stdout
 
     # ----------------------------
